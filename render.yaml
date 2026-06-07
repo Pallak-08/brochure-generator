@@ -1,0 +1,17 @@
+# Render service config — gets picked up automatically when you connect
+# the repo to Render. The free tier sleeps after 15 min idle; the frontend
+# shows a "warming up..." message to cover the cold-start.
+services:
+  - type: web
+    name: brochure-generator-api
+    runtime: docker
+    plan: free
+    region: oregon
+    healthCheckPath: /
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false              # you fill this in Render dashboard
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false

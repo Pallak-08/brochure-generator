@@ -1,0 +1,16 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.git/
+.DS_Store
+.env
+runs/
+web/
+brochure_generator.ipynb
+*.md
+Dockerfile
+.dockerignore
+test_api.sh
+run.sh
