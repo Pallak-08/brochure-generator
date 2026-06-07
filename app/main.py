@@ -38,6 +38,15 @@ class GenerateRequest(BaseModel):
     url: HttpUrl
 
 
+class RerenderRequest(BaseModel):
+    """Used by the editor: client sends the full current brochure + design state
+    (after the user's edits) and we re-render the PDF. Stateless on our end so
+    this works across Render container restarts."""
+    url: str
+    brochure: dict
+    design: dict
+
+
 class GenerateResponse(BaseModel):
     run_id: str
     brochure: dict
@@ -98,6 +107,36 @@ def generate(req: GenerateRequest):
         brochure=brochure,
         design=design,
         palette_extracted=palette_extracted,
+        pdf_url=pdf_url,
+    )
+
+
+@app.post("/runs/{run_id}/rerender", response_model=GenerateResponse)
+def rerender(run_id: str, req: RerenderRequest):
+    """Re-render PDF with edited brochure content and/or design overrides.
+    Client passes the full current state so the backend stays stateless."""
+    run_dir = RUNS_DIR / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+    pdf_path = run_dir / "brochure.pdf"
+    try:
+        render_pdf(req.brochure, req.design, source_url=req.url, output_path=pdf_path)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PDF render failed: {e}")
+
+    pdf_url = f"/runs/{run_id}/pdf"
+    if storage.is_configured():
+        try:
+            pdf_bytes = pdf_path.read_bytes()
+            storage_path = storage.upload_pdf(run_id, pdf_bytes)
+            pdf_url = storage.signed_url(storage_path)
+        except Exception as e:
+            print(f"  supabase upload failed: {e}")
+
+    return GenerateResponse(
+        run_id=run_id,
+        brochure=req.brochure,
+        design=req.design,
+        palette_extracted={},
         pdf_url=pdf_url,
     )
 
