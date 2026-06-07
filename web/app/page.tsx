@@ -40,7 +40,20 @@ type Result = {
   pdf_url: string;
 };
 
-type Status = "idle" | "loading" | "result" | "error";
+type Preset = {
+  key: string;
+  name: string;
+  tagline: string;
+  vibe: string;
+  display_font: string;
+  background: string;
+  primary: string;
+  accent: string;
+  ink: string;
+  muted: string;
+};
+
+type Status = "idle" | "picking" | "loading" | "result" | "error";
 
 const VIBES = ["minimal", "editorial", "playful", "corporate", "warm"];
 const FONTS = ["serif", "sans", "mono"];
@@ -62,6 +75,15 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [loadingStep, setLoadingStep] = useState(0);
   const [sourceUrl, setSourceUrl] = useState("");
+  const [presets, setPresets] = useState<Preset[]>([]);
+
+  // Fetch presets once on mount
+  useEffect(() => {
+    fetch(`${API_URL}/presets`)
+      .then((r) => r.json())
+      .then((d) => setPresets(d.presets || []))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (status !== "loading") return;
@@ -71,17 +93,21 @@ export default function Home() {
     return () => clearInterval(id);
   }, [status]);
 
-  async function onGenerate(e: React.FormEvent) {
+  function onSubmitUrl(e: React.FormEvent) {
     e.preventDefault();
+    setSourceUrl(url);
+    setStatus("picking");
+  }
+
+  async function generate(preset: string | null) {
     setError(null);
     setStatus("loading");
     setLoadingStep(0);
-    setSourceUrl(url);
     try {
       const res = await fetch(`${API_URL}/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url: sourceUrl, preset }),
       });
       if (!res.ok) throw new Error(await res.text());
       const data: Result = await res.json();
@@ -98,16 +124,29 @@ export default function Home() {
     setResult(null);
     setError(null);
     setUrl("");
+    setSourceUrl("");
   }
 
   return (
     <main className="flex-1 flex flex-col">
-      {status === "idle" && <Landing url={url} setUrl={setUrl} onGenerate={onGenerate} />}
+      {status === "idle" && (
+        <Landing url={url} setUrl={setUrl} onSubmit={onSubmitUrl} />
+      )}
+      {status === "picking" && (
+        <TemplatePicker
+          presets={presets}
+          sourceUrl={sourceUrl}
+          onPick={generate}
+          onBack={() => setStatus("idle")}
+        />
+      )}
       {status === "loading" && <Loading step={LOADING_STEPS[loadingStep]} />}
       {status === "result" && result && (
         <Editor initial={result} sourceUrl={sourceUrl} onReset={reset} />
       )}
-      {status === "error" && <ErrorView error={error || "Unknown error"} onReset={reset} />}
+      {status === "error" && (
+        <ErrorView error={error || "Unknown error"} onReset={reset} />
+      )}
     </main>
   );
 }
@@ -116,11 +155,11 @@ export default function Home() {
 function Landing({
   url,
   setUrl,
-  onGenerate,
+  onSubmit,
 }: {
   url: string;
   setUrl: (s: string) => void;
-  onGenerate: (e: React.FormEvent) => void;
+  onSubmit: (e: React.FormEvent) => void;
 }) {
   return (
     <div className="aurora flex-1 flex flex-col items-center justify-center px-6 py-16 text-center">
@@ -132,12 +171,12 @@ function Landing({
           Any URL.<br />A branded brochure.
         </h1>
         <p className="mt-8 text-lg text-white/70 max-w-lg mx-auto">
-          Paste a company website. We scrape its content, extract its real color palette,
-          read its vibe, and design a one-of-a-kind PDF brochure. Then you can edit
-          every word and swap the design.
+          Paste a company website, pick a design template (or let AI choose),
+          get a PDF brochure with the company&apos;s real voice and colors.
+          Then edit anything.
         </p>
 
-        <form onSubmit={onGenerate} className="mt-12">
+        <form onSubmit={onSubmit} className="mt-12">
           <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="url"
@@ -151,7 +190,7 @@ function Landing({
               type="submit"
               className="px-7 py-4 bg-white text-black font-semibold rounded-xl hover:bg-white/90 transition whitespace-nowrap"
             >
-              Generate →
+              Continue →
             </button>
           </div>
         </form>
@@ -172,6 +211,147 @@ function Landing({
         </div>
       </div>
     </div>
+  );
+}
+
+/* ====================================================== TEMPLATE PICKER */
+function TemplatePicker({
+  presets,
+  sourceUrl,
+  onPick,
+  onBack,
+}: {
+  presets: Preset[];
+  sourceUrl: string;
+  onPick: (preset: string | null) => void;
+  onBack: () => void;
+}) {
+  return (
+    <div className="flex-1 px-6 py-10 max-w-6xl mx-auto w-full">
+      <div className="flex items-center justify-between mb-8">
+        <button
+          onClick={onBack}
+          className="text-sm text-white/60 hover:text-white transition"
+        >
+          ← change URL
+        </button>
+        <span className="text-xs uppercase tracking-[0.3em] text-white/40">
+          For: <span className="text-white/70 normal-case tracking-normal">{sourceUrl}</span>
+        </span>
+      </div>
+
+      <div className="text-center mb-10">
+        <p className="text-xs uppercase tracking-[0.3em] text-white/50 mb-3">
+          Step 2 of 3
+        </p>
+        <h2 className="font-[family-name:var(--font-serif)] italic text-4xl sm:text-5xl">
+          Pick a template.
+        </h2>
+        <p className="mt-3 text-white/60 text-sm">
+          Each generates a totally different look. Or let the AI pick the best fit.
+        </p>
+      </div>
+
+      {/* AI choose — featured card */}
+      <button
+        onClick={() => onPick(null)}
+        className="group w-full mb-6 p-6 rounded-2xl border-2 border-white/20 bg-gradient-to-br from-violet-500/20 via-cyan-500/15 to-pink-500/20 hover:border-white/50 transition text-left flex items-center gap-5"
+      >
+        <div className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center text-2xl flex-shrink-0">
+          ✨
+        </div>
+        <div className="flex-1">
+          <div className="flex items-baseline gap-3 mb-1">
+            <h3 className="font-[family-name:var(--font-serif)] italic text-2xl">
+              Let AI design it
+            </h3>
+            <span className="text-xs uppercase tracking-[0.2em] text-white/50">
+              recommended
+            </span>
+          </div>
+          <p className="text-white/70 text-sm">
+            We&apos;ll analyze {sourceUrl ? new URL(sourceUrl).hostname : "the site"}&apos;s
+            real colors, fonts and vibe — then pick the design that fits.
+          </p>
+        </div>
+        <span className="text-2xl text-white/40 group-hover:text-white transition">
+          →
+        </span>
+      </button>
+
+      <div className="relative my-6 flex items-center gap-4">
+        <div className="flex-1 h-px bg-white/10" />
+        <span className="text-xs uppercase tracking-[0.3em] text-white/40">
+          Or pick one of 10
+        </span>
+        <div className="flex-1 h-px bg-white/10" />
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        {presets.length === 0 && (
+          <p className="col-span-full text-center text-white/40 text-sm py-8">
+            Loading templates… (if this hangs, the backend may be cold-starting)
+          </p>
+        )}
+        {presets.map((p) => (
+          <PresetCard key={p.key} preset={p} onClick={() => onPick(p.key)} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PresetCard({ preset, onClick }: { preset: Preset; onClick: () => void }) {
+  const fontFamily =
+    preset.display_font === "serif"
+      ? "var(--font-serif)"
+      : preset.display_font === "mono"
+      ? "var(--font-mono)"
+      : "var(--font-sans)";
+  return (
+    <button
+      onClick={onClick}
+      className="group rounded-xl overflow-hidden border border-white/10 hover:border-white/40 transition text-left flex flex-col"
+    >
+      {/* Mini brochure preview rendered in real preset colors */}
+      <div
+        className="aspect-[3/4] p-3 flex flex-col gap-1.5 relative overflow-hidden"
+        style={{ background: preset.background, color: preset.ink }}
+      >
+        <div
+          className="absolute -top-6 -right-6 w-16 h-16 rounded-full"
+          style={{ background: preset.accent, opacity: 0.85 }}
+        />
+        <div
+          className="text-[10px] uppercase tracking-widest font-semibold opacity-70"
+          style={{ color: preset.muted }}
+        >
+          Brochure
+        </div>
+        <div
+          className="mt-auto text-xl leading-tight font-semibold"
+          style={{ fontFamily, color: preset.primary, fontStyle: preset.display_font === "serif" ? "italic" : "normal" }}
+        >
+          Company.
+        </div>
+        <div className="flex gap-1 mt-1">
+          <div className="h-1 flex-1 rounded-full" style={{ background: preset.primary }} />
+          <div className="h-1 w-1/3 rounded-full" style={{ background: preset.accent }} />
+        </div>
+        <div className="h-px w-full my-1 opacity-30" style={{ background: preset.ink }} />
+        <div className="space-y-0.5">
+          <div className="h-0.5 w-full opacity-50 rounded" style={{ background: preset.ink }} />
+          <div className="h-0.5 w-4/5 opacity-50 rounded" style={{ background: preset.ink }} />
+          <div className="h-0.5 w-2/3 opacity-50 rounded" style={{ background: preset.ink }} />
+        </div>
+      </div>
+
+      {/* Card footer */}
+      <div className="px-3 py-2.5 bg-black/40 group-hover:bg-black/60 transition">
+        <div className="text-sm font-semibold">{preset.name}</div>
+        <div className="text-[11px] text-white/50 mt-0.5">{preset.tagline}</div>
+      </div>
+    </button>
   );
 }
 
@@ -234,7 +414,7 @@ function Editor({
   const [pdfUrl, setPdfUrl] = useState(initial.pdf_url);
   const [dirty, setDirty] = useState(false);
   const [rerendering, setRerendering] = useState(false);
-  const [pdfKey, setPdfKey] = useState(0); // bumps to force iframe reload
+  const [pdfKey, setPdfKey] = useState(0);
   const palette = initial.palette_extracted;
   const runId = initial.run_id;
   const pdfFull = pdfUrl.startsWith("http") ? pdfUrl : `${API_URL}${pdfUrl}`;
@@ -271,12 +451,8 @@ function Editor({
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      {/* Sticky top bar */}
       <div className="sticky top-0 z-10 backdrop-blur bg-black/60 border-b border-white/10 px-5 py-3 flex items-center justify-between gap-3">
-        <button
-          onClick={onReset}
-          className="text-sm text-white/60 hover:text-white transition"
-        >
+        <button onClick={onReset} className="text-sm text-white/60 hover:text-white transition">
           ← New brochure
         </button>
         <div className="flex items-center gap-3">
@@ -301,82 +477,27 @@ function Editor({
       </div>
 
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-[420px_1fr] min-h-0">
-        {/* ===== Left: editor ===== */}
         <div className="overflow-y-auto border-r border-white/10 p-5 space-y-6 max-h-[calc(100vh-58px)]">
-          <DesignPanel
-            design={design}
-            palette={palette}
-            updateDesign={updateDesign}
-          />
-
+          <DesignPanel design={design} palette={palette} updateDesign={updateDesign} />
           <Divider label="Brochure content" />
-
-          <Field
-            label="Company name"
-            value={brochure.company_name}
-            onChange={(v) => updateBrochure({ company_name: v })}
-          />
-          <Field
-            label="Tagline"
-            value={brochure.tagline}
-            onChange={(v) => updateBrochure({ tagline: v })}
-            multiline
-          />
-          <Field
-            label="About"
-            value={brochure.about}
-            onChange={(v) => updateBrochure({ about: v })}
-            multiline
-          />
-          <ListField
-            label="What we do"
-            value={brochure.what_we_do}
-            onChange={(v) => updateBrochure({ what_we_do: v })}
-          />
-          <ListField
-            label="Why us"
-            value={brochure.why_us}
-            onChange={(v) => updateBrochure({ why_us: v })}
-          />
-          <Field
-            label="Culture"
-            value={brochure.culture}
-            onChange={(v) => updateBrochure({ culture: v })}
-            multiline
-          />
-          <Field
-            label="Careers"
-            value={brochure.careers}
-            onChange={(v) => updateBrochure({ careers: v })}
-            multiline
-          />
-          <Field
-            label="Call to action"
-            value={brochure.call_to_action}
-            onChange={(v) => updateBrochure({ call_to_action: v })}
-            multiline
-          />
+          <Field label="Company name" value={brochure.company_name} onChange={(v) => updateBrochure({ company_name: v })} />
+          <Field label="Tagline" value={brochure.tagline} onChange={(v) => updateBrochure({ tagline: v })} multiline />
+          <Field label="About" value={brochure.about} onChange={(v) => updateBrochure({ about: v })} multiline />
+          <ListField label="What we do" value={brochure.what_we_do} onChange={(v) => updateBrochure({ what_we_do: v })} />
+          <ListField label="Why us" value={brochure.why_us} onChange={(v) => updateBrochure({ why_us: v })} />
+          <Field label="Culture" value={brochure.culture} onChange={(v) => updateBrochure({ culture: v })} multiline />
+          <Field label="Careers" value={brochure.careers} onChange={(v) => updateBrochure({ careers: v })} multiline />
+          <Field label="Call to action" value={brochure.call_to_action} onChange={(v) => updateBrochure({ call_to_action: v })} multiline />
         </div>
 
-        {/* ===== Right: PDF preview ===== */}
         <div className="bg-zinc-900 flex flex-col min-h-[600px]">
           <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/40">
             <span>Live preview</span>
-            <a
-              href={pdfFull}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-white/60 hover:text-white transition"
-            >
+            <a href={pdfFull} target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-white transition">
               Open ↗
             </a>
           </div>
-          <iframe
-            key={pdfKey}
-            src={pdfFull}
-            className="flex-1 w-full bg-white"
-            title={`${brochure.company_name} brochure`}
-          />
+          <iframe key={pdfKey} src={pdfFull} className="flex-1 w-full bg-white" title={`${brochure.company_name} brochure`} />
         </div>
       </div>
     </div>
@@ -403,9 +524,7 @@ function DesignPanel({
               key={v}
               onClick={() => updateDesign({ vibe: v })}
               className={`px-3 py-2 text-xs rounded-md border transition capitalize ${
-                design.vibe === v
-                  ? "bg-white text-black border-white"
-                  : "border-white/15 text-white/70 hover:border-white/40"
+                design.vibe === v ? "bg-white text-black border-white" : "border-white/15 text-white/70 hover:border-white/40"
               }`}
             >
               {v}
@@ -415,18 +534,14 @@ function DesignPanel({
       </div>
 
       <div>
-        <p className="text-xs uppercase tracking-[0.25em] text-white/40 mb-2">
-          Display font
-        </p>
+        <p className="text-xs uppercase tracking-[0.25em] text-white/40 mb-2">Display font</p>
         <div className="grid grid-cols-3 gap-1.5">
           {FONTS.map((f) => (
             <button
               key={f}
               onClick={() => updateDesign({ display_font: f })}
               className={`px-3 py-2 text-xs rounded-md border transition capitalize ${
-                design.display_font === f
-                  ? "bg-white text-black border-white"
-                  : "border-white/15 text-white/70 hover:border-white/40"
+                design.display_font === f ? "bg-white text-black border-white" : "border-white/15 text-white/70 hover:border-white/40"
               }`}
             >
               {f}
@@ -436,38 +551,22 @@ function DesignPanel({
       </div>
 
       <ColorRow label="Background" value={design.background} onChange={(c) => updateDesign({ background: c })} />
-      <ColorRow label="Primary"    value={design.primary}    onChange={(c) => updateDesign({ primary: c })} />
-      <ColorRow label="Accent"     value={design.accent}     onChange={(c) => updateDesign({ accent: c })} />
-      <ColorRow label="Ink (text)" value={design.ink}        onChange={(c) => updateDesign({ ink: c })} />
+      <ColorRow label="Primary" value={design.primary} onChange={(c) => updateDesign({ primary: c })} />
+      <ColorRow label="Accent" value={design.accent} onChange={(c) => updateDesign({ accent: c })} />
+      <ColorRow label="Ink (text)" value={design.ink} onChange={(c) => updateDesign({ ink: c })} />
 
       {palette.palette.length > 0 && (
         <div>
-          <p className="text-xs uppercase tracking-[0.25em] text-white/40 mb-2">
-            From the site — click to use as primary
-          </p>
+          <p className="text-xs uppercase tracking-[0.25em] text-white/40 mb-2">From the site — click to use as primary</p>
           <div className="flex flex-wrap gap-1.5">
             {palette.palette.map((c) => (
-              <button
-                key={c}
-                onClick={() => updateDesign({ primary: c })}
-                className="w-8 h-8 rounded-md border border-white/15 hover:scale-110 transition"
-                style={{ background: c }}
-                title={`${c} → primary`}
-              />
+              <button key={c} onClick={() => updateDesign({ primary: c })} className="w-8 h-8 rounded-md border border-white/15 hover:scale-110 transition" style={{ background: c }} title={`${c} → primary`} />
             ))}
           </div>
-          <p className="text-xs uppercase tracking-[0.25em] text-white/40 mt-3 mb-2">
-            Or use as accent
-          </p>
+          <p className="text-xs uppercase tracking-[0.25em] text-white/40 mt-3 mb-2">Or use as accent</p>
           <div className="flex flex-wrap gap-1.5">
             {palette.palette.map((c) => (
-              <button
-                key={c + "a"}
-                onClick={() => updateDesign({ accent: c })}
-                className="w-8 h-8 rounded-md border border-white/15 hover:scale-110 transition"
-                style={{ background: c }}
-                title={`${c} → accent`}
-              />
+              <button key={c + "a"} onClick={() => updateDesign({ accent: c })} className="w-8 h-8 rounded-md border border-white/15 hover:scale-110 transition" style={{ background: c }} title={`${c} → accent`} />
             ))}
           </div>
         </div>
@@ -506,22 +605,11 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-xs uppercase tracking-[0.25em] text-white/40 mb-1.5">
-        {label}
-      </label>
+      <label className="block text-xs uppercase tracking-[0.25em] text-white/40 mb-1.5">{label}</label>
       {multiline ? (
-        <textarea
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          rows={3}
-          className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-white/40 transition resize-y"
-        />
+        <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={3} className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-white/40 transition resize-y" />
       ) : (
-        <input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-white/40 transition"
-        />
+        <input value={value} onChange={(e) => onChange(e.target.value)} className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-white/40 transition" />
       )}
     </div>
   );
@@ -539,35 +627,18 @@ function ListField({
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
-        <label className="block text-xs uppercase tracking-[0.25em] text-white/40">
-          {label}
-        </label>
-        <button
-          onClick={() => onChange([...value, ""])}
-          className="text-xs text-white/60 hover:text-white transition"
-        >
-          + add
-        </button>
+        <label className="block text-xs uppercase tracking-[0.25em] text-white/40">{label}</label>
+        <button onClick={() => onChange([...value, ""])} className="text-xs text-white/60 hover:text-white transition">+ add</button>
       </div>
       <div className="space-y-1.5">
         {value.map((item, i) => (
           <div key={i} className="flex gap-1.5">
-            <input
-              value={item}
-              onChange={(e) => {
-                const next = [...value];
-                next[i] = e.target.value;
-                onChange(next);
-              }}
-              className="flex-1 bg-white/5 border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-white/40 transition"
-            />
-            <button
-              onClick={() => onChange(value.filter((_, j) => j !== i))}
-              className="px-2 text-white/40 hover:text-red-400 transition"
-              title="remove"
-            >
-              ×
-            </button>
+            <input value={item} onChange={(e) => {
+              const next = [...value];
+              next[i] = e.target.value;
+              onChange(next);
+            }} className="flex-1 bg-white/5 border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-white/40 transition" />
+            <button onClick={() => onChange(value.filter((_, j) => j !== i))} className="px-2 text-white/40 hover:text-red-400 transition" title="remove">×</button>
           </div>
         ))}
       </div>
@@ -575,32 +646,12 @@ function ListField({
   );
 }
 
-function ColorRow({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) {
+function ColorRow({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
     <div className="flex items-center gap-3">
-      <label className="text-xs uppercase tracking-[0.25em] text-white/40 flex-1">
-        {label}
-      </label>
-      <input
-        type="color"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-8 h-8 rounded-md border border-white/10 cursor-pointer bg-transparent"
-        style={{ padding: 0 }}
-      />
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-24 bg-white/5 border border-white/10 rounded-md px-2 py-1 text-xs text-white font-mono focus:outline-none focus:border-white/40 transition"
-      />
+      <label className="text-xs uppercase tracking-[0.25em] text-white/40 flex-1">{label}</label>
+      <input type="color" value={value} onChange={(e) => onChange(e.target.value)} className="w-8 h-8 rounded-md border border-white/10 cursor-pointer bg-transparent" style={{ padding: 0 }} />
+      <input value={value} onChange={(e) => onChange(e.target.value)} className="w-24 bg-white/5 border border-white/10 rounded-md px-2 py-1 text-xs text-white font-mono focus:outline-none focus:border-white/40 transition" />
     </div>
   );
 }

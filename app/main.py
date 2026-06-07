@@ -17,6 +17,7 @@ from pydantic import BaseModel, HttpUrl
 from app.llm import generate_brochure_with_design
 from app.pdf import render_pdf
 from app import storage
+from app.presets import DESIGN_PRESETS, get_preset
 
 load_dotenv()
 
@@ -36,6 +37,7 @@ app.add_middleware(
 
 class GenerateRequest(BaseModel):
     url: HttpUrl
+    preset: str | None = None  # one of presets.DESIGN_PRESETS keys, or None for AI-picked
 
 
 class RerenderRequest(BaseModel):
@@ -60,6 +62,28 @@ def root():
     return {"ok": True, "service": "brochure-generator"}
 
 
+@app.get("/presets")
+def list_presets():
+    """Public list of design presets for the frontend template picker."""
+    return {
+        "presets": [
+            {
+                "key": key,
+                "name": p["name"],
+                "tagline": p["tagline"],
+                "vibe": p["vibe"],
+                "display_font": p["display_font"],
+                "background": p["background"],
+                "primary": p["primary"],
+                "accent": p["accent"],
+                "ink": p["ink"],
+                "muted": p["muted"],
+            }
+            for key, p in DESIGN_PRESETS.items()
+        ]
+    }
+
+
 @app.post("/generate", response_model=GenerateResponse)
 def generate(req: GenerateRequest):
     url = str(req.url)
@@ -71,6 +95,13 @@ def generate(req: GenerateRequest):
     brochure = result.get("brochure", {})
     design = result.get("design", {})
     palette_extracted = result.get("palette_extracted", {})
+
+    # If the user picked a specific preset, override the AI-chosen design.
+    # The brochure copy (text) is always AI-written; only the look is swapped.
+    if req.preset:
+        preset_design = get_preset(req.preset)
+        if preset_design:
+            design = preset_design
 
     run_id = uuid.uuid4().hex[:12]
     run_dir = RUNS_DIR / run_id
