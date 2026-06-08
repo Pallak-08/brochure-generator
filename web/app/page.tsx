@@ -49,45 +49,37 @@ const LOADING_STEPS = [
 ];
 
 /* ------------------------------------------------------------------- *
- * useFadeIn — IntersectionObserver hook that adds 'in-view' class once
- * an element scrolls into the viewport. Used for scroll-triggered fade
- * and slide animations across the landing page.
+ * useReveal — adds the `in-view` class to a ref'd element when it
+ * scrolls into the viewport. The animation itself is defined in CSS
+ * (fade-up, fade-in, slide-right in globals.css) so the initial
+ * state lives in the stylesheet, before React touches the DOM.
+ * This is more reliable than the inline-style + state approach,
+ * which sometimes skips the transition on fast page loads.
  * ------------------------------------------------------------------- */
-function useFadeIn<T extends HTMLElement>() {
+function useReveal<T extends HTMLElement>(delay = 0) {
   const ref = useRef<T>(null);
-  const [shown, setShown] = useState(false);
   useEffect(() => {
-    if (!ref.current || shown) return;
+    if (!ref.current) return;
+    const el = ref.current;
+    let timer: number | undefined;
     const obs = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
           if (e.isIntersecting) {
-            setShown(true);
+            timer = window.setTimeout(() => el.classList.add("in-view"), delay);
             obs.disconnect();
           }
         });
       },
-      { threshold: 0.15 }
+      { threshold: 0.12, rootMargin: "0px 0px -60px 0px" }
     );
-    obs.observe(ref.current);
-    return () => obs.disconnect();
-  }, [shown]);
-  return { ref, shown } as const;
-}
-
-/* Track normalized scroll progress for parallax. Returns 0..1 of full page. */
-function useScrollProgress() {
-  const [p, setP] = useState(0);
-  useEffect(() => {
-    const onScroll = () => {
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      setP(max > 0 ? window.scrollY / max : 0);
+    obs.observe(el);
+    return () => {
+      obs.disconnect();
+      if (timer !== undefined) clearTimeout(timer);
     };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-  return p;
+  }, [delay]);
+  return ref;
 }
 
 export default function Home() {
@@ -175,10 +167,9 @@ function Landing({
   setUrl: (s: string) => void;
   onSubmit: (e: React.FormEvent) => void;
 }) {
-  const scrollP = useScrollProgress();
   return (
     <div className="flex-1 overflow-y-auto overflow-x-hidden">
-      <HeroSection url={url} setUrl={setUrl} onSubmit={onSubmit} scrollP={scrollP} />
+      <HeroSection url={url} setUrl={setUrl} onSubmit={onSubmit} />
       <HowItWorksSection />
       <ExamplesSection />
       <FeaturesSection />
@@ -199,45 +190,20 @@ function Landing({
   );
 }
 
-/* ============ HERO ============ */
+/* ============ HERO — solid dot-grid background, no gradient banding ============ */
 function HeroSection({
   url,
   setUrl,
   onSubmit,
-  scrollP,
 }: {
   url: string;
   setUrl: (s: string) => void;
   onSubmit: (e: React.FormEvent) => void;
-  scrollP: number;
 }) {
-  // Parallax — background shapes drift with scroll
-  const offset1 = scrollP * 200;
-  const offset2 = scrollP * -150;
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center px-6 py-16 text-center overflow-hidden">
-      {/* Animated background blobs */}
-      <div
-        className="absolute pointer-events-none rounded-full bg-violet-500/30 blur-[100px]"
-        style={{
-          width: 520, height: 520, top: -120 + offset1, left: -80,
-          transform: `translateY(${offset1}px)`,
-        }}
-      />
-      <div
-        className="absolute pointer-events-none rounded-full bg-cyan-500/25 blur-[120px]"
-        style={{
-          width: 600, height: 600, top: 100, right: -150,
-          transform: `translateY(${offset2}px)`,
-        }}
-      />
-      <div
-        className="absolute pointer-events-none rounded-full bg-pink-500/20 blur-[100px]"
-        style={{
-          width: 440, height: 440, bottom: -80, left: "30%",
-          transform: `translateY(${offset1 * 0.4}px)`,
-        }}
-      />
+    <section className="dot-grid relative min-h-screen flex flex-col items-center justify-center px-6 py-16 text-center overflow-hidden">
+      {/* Hairline frame — clean geometric accent, no gradients */}
+      <div className="absolute inset-6 sm:inset-10 border border-white/[0.06] pointer-events-none rounded-[2px]" />
 
       <div className="relative z-10 max-w-3xl w-full">
         <p className="text-xs uppercase tracking-[0.3em] text-white/50 mb-6">
@@ -261,7 +227,7 @@ function HeroSection({
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://stripe.com"
-              className="flex-1 px-5 py-4 bg-white/5 border border-white/15 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-white/40 transition backdrop-blur"
+              className="flex-1 px-5 py-4 bg-white/5 border border-white/15 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-white/40 transition"
             />
             <button
               type="submit"
@@ -290,8 +256,8 @@ function HeroSection({
         </div>
       </div>
 
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-xs uppercase tracking-[0.3em] text-white/30 animate-pulse">
-        Scroll to learn more ↓
+      <div className="scroll-hint absolute bottom-8 left-1/2 -translate-x-1/2 text-xs uppercase tracking-[0.3em] text-white/40">
+        Scroll ↓
       </div>
     </section>
   );
@@ -299,7 +265,7 @@ function HeroSection({
 
 /* ============ HOW IT WORKS ============ */
 function HowItWorksSection() {
-  const { ref, shown } = useFadeIn<HTMLDivElement>();
+  const ref = useReveal<HTMLDivElement>();
   const steps = [
     {
       n: "01",
@@ -327,12 +293,7 @@ function HowItWorksSection() {
     },
   ];
   return (
-    <section
-      ref={ref}
-      className={`px-6 py-32 max-w-6xl mx-auto transition-all duration-1000 ${
-        shown ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
-      }`}
-    >
+    <section ref={ref} className="fade-up px-6 py-32 max-w-6xl mx-auto">
       <p className="text-xs uppercase tracking-[0.3em] text-white/40 mb-4 text-center">
         How it works
       </p>
@@ -355,16 +316,11 @@ function StepCard({
   step: { n: string; title: string; body: string; icon: string };
   delay: number;
 }) {
-  const { ref, shown } = useFadeIn<HTMLDivElement>();
+  const ref = useReveal<HTMLDivElement>(delay);
   return (
     <div
       ref={ref}
-      className={`relative p-6 rounded-2xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/30 transition-all duration-700`}
-      style={{
-        opacity: shown ? 1 : 0,
-        transform: shown ? "translateY(0)" : "translateY(40px)",
-        transitionDelay: `${delay}ms`,
-      }}
+      className="fade-up relative p-6 rounded-2xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/30"
     >
       <div className="text-3xl mb-4">{step.icon}</div>
       <div className="font-[family-name:var(--font-serif)] italic text-2xl text-white/30 mb-1">
@@ -378,7 +334,7 @@ function StepCard({
 
 /* ============ EXAMPLES ============ */
 function ExamplesSection() {
-  const { ref, shown } = useFadeIn<HTMLDivElement>();
+  const ref = useReveal<HTMLDivElement>();
   const examples = [
     {
       name: "Anthropic",
@@ -412,12 +368,7 @@ function ExamplesSection() {
     },
   ];
   return (
-    <section
-      ref={ref}
-      className={`px-6 py-32 max-w-6xl mx-auto transition-all duration-1000 ${
-        shown ? "opacity-100" : "opacity-0"
-      }`}
-    >
+    <section ref={ref} className="fade-up px-6 py-32 max-w-6xl mx-auto">
       <p className="text-xs uppercase tracking-[0.3em] text-white/40 mb-4 text-center">
         It looks like the brand
       </p>
@@ -444,16 +395,11 @@ function ExampleCard({
   name: string; url: string; bg: string; primary: string;
   accent: string; ink: string; font: string; vibe: string; delay: number;
 }) {
-  const { ref, shown } = useFadeIn<HTMLDivElement>();
+  const ref = useReveal<HTMLDivElement>(delay);
   return (
     <div
       ref={ref}
-      className="group rounded-2xl overflow-hidden border border-white/10 hover:border-white/30 transition-all duration-700 hover:-translate-y-2"
-      style={{
-        opacity: shown ? 1 : 0,
-        transform: shown ? "translateY(0)" : "translateY(30px)",
-        transitionDelay: `${delay}ms`,
-      }}
+      className="fade-up group rounded-2xl overflow-hidden border border-white/10 hover:border-white/30 hover:-translate-y-2"
     >
       {/* Mini brochure preview */}
       <div
@@ -498,7 +444,7 @@ function ExampleCard({
 
 /* ============ FEATURES ============ */
 function FeaturesSection() {
-  const { ref, shown } = useFadeIn<HTMLDivElement>();
+  const ref = useReveal<HTMLDivElement>();
   const features = [
     { t: "Real palette extraction", d: "We parse the site's CSS for actual hex codes — no guessing at brand colors." },
     { t: "10 design presets", d: "From Premium Noir to Startup Lime — each preset is a distinct visual identity." },
@@ -508,12 +454,7 @@ function FeaturesSection() {
     { t: "Free PDF download", d: "Get a real A4 PDF in your hands. No watermarks, no signup." },
   ];
   return (
-    <section
-      ref={ref}
-      className={`px-6 py-32 max-w-6xl mx-auto transition-all duration-1000 ${
-        shown ? "opacity-100" : "opacity-0"
-      }`}
-    >
+    <section ref={ref} className="fade-up px-6 py-32 max-w-6xl mx-auto">
       <p className="text-xs uppercase tracking-[0.3em] text-white/40 mb-4 text-center">
         What you can do
       </p>
@@ -530,16 +471,11 @@ function FeaturesSection() {
 }
 
 function FeatureItem({ t, d, delay }: { t: string; d: string; delay: number }) {
-  const { ref, shown } = useFadeIn<HTMLDivElement>();
+  const ref = useReveal<HTMLDivElement>(delay);
   return (
     <div
       ref={ref}
-      className="p-6 rounded-xl border border-white/10 bg-white/[0.02] hover:border-white/30 transition-all duration-700"
-      style={{
-        opacity: shown ? 1 : 0,
-        transform: shown ? "translateY(0)" : "translateY(24px)",
-        transitionDelay: `${delay}ms`,
-      }}
+      className="fade-up p-6 rounded-xl border border-white/10 bg-white/[0.02] hover:border-white/30"
     >
       <h3 className="font-semibold mb-2">{t}</h3>
       <p className="text-sm text-white/60 leading-relaxed">{d}</p>
@@ -549,7 +485,7 @@ function FeatureItem({ t, d, delay }: { t: string; d: string; delay: number }) {
 
 /* ============ TECH ============ */
 function TechSection() {
-  const { ref, shown } = useFadeIn<HTMLDivElement>();
+  const ref = useReveal<HTMLDivElement>();
   const stack = [
     { name: "Gemini 2.5 Flash", role: "LLM for copy + design choice" },
     { name: "BeautifulSoup", role: "scrape the site" },
@@ -559,12 +495,7 @@ function TechSection() {
     { name: "Supabase Storage", role: "durable PDF hosting" },
   ];
   return (
-    <section
-      ref={ref}
-      className={`px-6 py-32 max-w-4xl mx-auto text-center transition-all duration-1000 ${
-        shown ? "opacity-100" : "opacity-0"
-      }`}
-    >
+    <section ref={ref} className="fade-up px-6 py-32 max-w-4xl mx-auto text-center">
       <p className="text-xs uppercase tracking-[0.3em] text-white/40 mb-4">
         Under the hood
       </p>
@@ -581,16 +512,11 @@ function TechSection() {
 }
 
 function TechRow({ name, role, delay }: { name: string; role: string; delay: number }) {
-  const { ref, shown } = useFadeIn<HTMLDivElement>();
+  const ref = useReveal<HTMLDivElement>(delay);
   return (
     <div
       ref={ref}
-      className="flex items-baseline justify-between gap-4 px-4 py-3 rounded-lg border border-white/10 transition-all duration-700"
-      style={{
-        opacity: shown ? 1 : 0,
-        transform: shown ? "translateX(0)" : "translateX(-20px)",
-        transitionDelay: `${delay}ms`,
-      }}
+      className="slide-right flex items-baseline justify-between gap-4 px-4 py-3 rounded-lg border border-white/10"
     >
       <span className="font-mono font-medium text-sm">{name}</span>
       <span className="text-xs text-white/40">{role}</span>
@@ -604,27 +530,11 @@ function FinalCTASection({
 }: {
   url: string; setUrl: (s: string) => void; onSubmit: (e: React.FormEvent) => void;
 }) {
-  const { ref, shown } = useFadeIn<HTMLDivElement>();
+  const ref = useReveal<HTMLDivElement>();
   return (
-    <section
-      ref={ref}
-      className={`relative px-6 py-32 text-center overflow-hidden transition-all duration-1000 ${
-        shown ? "opacity-100" : "opacity-0"
-      }`}
-    >
-      {/* Big gradient ring */}
-      <div className="absolute pointer-events-none inset-0 flex items-center justify-center">
-        <div
-          className="rounded-full"
-          style={{
-            width: 700, height: 700,
-            background:
-              "conic-gradient(from 0deg, rgba(124,58,237,0.3), rgba(6,182,212,0.3), rgba(236,72,153,0.3), rgba(251,191,36,0.3), rgba(124,58,237,0.3))",
-            filter: "blur(80px)",
-            opacity: 0.5,
-          }}
-        />
-      </div>
+    <section ref={ref} className="fade-up relative px-6 py-32 text-center overflow-hidden">
+      {/* Hairline frame — matches hero, no gradient banding */}
+      <div className="absolute inset-6 sm:inset-10 border border-white/[0.06] pointer-events-none rounded-[2px]" />
       <div className="relative z-10 max-w-2xl mx-auto">
         <h2 className="font-[family-name:var(--font-serif)] italic text-5xl sm:text-7xl leading-[0.95] mb-8">
           Try it.<br />Takes a minute.
@@ -774,7 +684,7 @@ function PresetCard({ preset, onClick }: { preset: Preset; onClick: () => void }
 /* ============================================================ LOADING */
 function Loading({ step }: { step: string }) {
   return (
-    <div className="aurora flex-1 flex flex-col items-center justify-center px-6 py-16">
+    <div className="dot-grid flex-1 flex flex-col items-center justify-center px-6 py-16">
       <div className="flex gap-2 mb-12">
         {[0, 1, 2].map((i) => (
           <span
