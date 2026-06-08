@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -16,41 +16,21 @@ type Brochure = {
 };
 
 type Design = {
-  vibe: string;
-  background: string;
-  primary: string;
-  accent: string;
-  ink: string;
-  muted: string;
-  display_font: string;
-  reasoning: string;
+  vibe: string; background: string; primary: string; accent: string;
+  ink: string; muted: string; display_font: string; reasoning: string;
 };
 
-type Palette = {
-  palette: string[];
-  background: string;
-  fonts: string[];
-};
+type Palette = { palette: string[]; background: string; fonts: string[] };
 
 type Result = {
-  run_id: string;
-  brochure: Brochure;
-  design: Design;
-  palette_extracted: Palette;
-  pdf_url: string;
+  run_id: string; brochure: Brochure; design: Design;
+  palette_extracted: Palette; pdf_url: string;
 };
 
 type Preset = {
-  key: string;
-  name: string;
-  tagline: string;
-  vibe: string;
-  display_font: string;
-  background: string;
-  primary: string;
-  accent: string;
-  ink: string;
-  muted: string;
+  key: string; name: string; tagline: string;
+  vibe: string; display_font: string;
+  background: string; primary: string; accent: string; ink: string; muted: string;
 };
 
 type Status = "idle" | "picking" | "loading" | "result" | "error";
@@ -68,6 +48,48 @@ const LOADING_STEPS = [
   "Rendering the PDF…",
 ];
 
+/* ------------------------------------------------------------------- *
+ * useFadeIn — IntersectionObserver hook that adds 'in-view' class once
+ * an element scrolls into the viewport. Used for scroll-triggered fade
+ * and slide animations across the landing page.
+ * ------------------------------------------------------------------- */
+function useFadeIn<T extends HTMLElement>() {
+  const ref = useRef<T>(null);
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    if (!ref.current || shown) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            setShown(true);
+            obs.disconnect();
+          }
+        });
+      },
+      { threshold: 0.15 }
+    );
+    obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, [shown]);
+  return { ref, shown } as const;
+}
+
+/* Track normalized scroll progress for parallax. Returns 0..1 of full page. */
+function useScrollProgress() {
+  const [p, setP] = useState(0);
+  useEffect(() => {
+    const onScroll = () => {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      setP(max > 0 ? window.scrollY / max : 0);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  return p;
+}
+
 export default function Home() {
   const [url, setUrl] = useState("");
   const [status, setStatus] = useState<Status>("idle");
@@ -77,7 +99,6 @@ export default function Home() {
   const [sourceUrl, setSourceUrl] = useState("");
   const [presets, setPresets] = useState<Preset[]>([]);
 
-  // Fetch presets once on mount
   useEffect(() => {
     fetch(`${API_URL}/presets`)
       .then((r) => r.json())
@@ -129,29 +150,22 @@ export default function Home() {
 
   return (
     <main className="flex-1 flex flex-col">
-      {status === "idle" && (
-        <Landing url={url} setUrl={setUrl} onSubmit={onSubmitUrl} />
-      )}
+      {status === "idle" && <Landing url={url} setUrl={setUrl} onSubmit={onSubmitUrl} />}
       {status === "picking" && (
-        <TemplatePicker
-          presets={presets}
-          sourceUrl={sourceUrl}
-          onPick={generate}
-          onBack={() => setStatus("idle")}
-        />
+        <TemplatePicker presets={presets} sourceUrl={sourceUrl} onPick={generate} onBack={() => setStatus("idle")} />
       )}
       {status === "loading" && <Loading step={LOADING_STEPS[loadingStep]} />}
       {status === "result" && result && (
         <Editor initial={result} sourceUrl={sourceUrl} onReset={reset} />
       )}
-      {status === "error" && (
-        <ErrorView error={error || "Unknown error"} onReset={reset} />
-      )}
+      {status === "error" && <ErrorView error={error || "Unknown error"} onReset={reset} />}
     </main>
   );
 }
 
-/* ============================================================ LANDING */
+/* ===============================================================
+ * LANDING — full scrollable landing page with multiple sections
+ * =============================================================== */
 function Landing({
   url,
   setUrl,
@@ -161,22 +175,85 @@ function Landing({
   setUrl: (s: string) => void;
   onSubmit: (e: React.FormEvent) => void;
 }) {
+  const scrollP = useScrollProgress();
   return (
-    <div className="aurora flex-1 flex flex-col items-center justify-center px-6 py-16 text-center">
-      <div className="max-w-2xl w-full">
+    <div className="flex-1 overflow-y-auto overflow-x-hidden">
+      <HeroSection url={url} setUrl={setUrl} onSubmit={onSubmit} scrollP={scrollP} />
+      <HowItWorksSection />
+      <ExamplesSection />
+      <FeaturesSection />
+      <TechSection />
+      <FinalCTASection url={url} setUrl={setUrl} onSubmit={onSubmit} />
+      <footer className="border-t border-white/10 px-6 py-8 text-center text-xs text-white/40">
+        Built with FastAPI · Gemini · WeasyPrint · Next.js · Supabase ·
+        <a
+          href="https://github.com/Pallak-08/brochure-generator"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ml-2 underline underline-offset-2 hover:text-white transition"
+        >
+          source on github
+        </a>
+      </footer>
+    </div>
+  );
+}
+
+/* ============ HERO ============ */
+function HeroSection({
+  url,
+  setUrl,
+  onSubmit,
+  scrollP,
+}: {
+  url: string;
+  setUrl: (s: string) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  scrollP: number;
+}) {
+  // Parallax — background shapes drift with scroll
+  const offset1 = scrollP * 200;
+  const offset2 = scrollP * -150;
+  return (
+    <section className="relative min-h-screen flex flex-col items-center justify-center px-6 py-16 text-center overflow-hidden">
+      {/* Animated background blobs */}
+      <div
+        className="absolute pointer-events-none rounded-full bg-violet-500/30 blur-[100px]"
+        style={{
+          width: 520, height: 520, top: -120 + offset1, left: -80,
+          transform: `translateY(${offset1}px)`,
+        }}
+      />
+      <div
+        className="absolute pointer-events-none rounded-full bg-cyan-500/25 blur-[120px]"
+        style={{
+          width: 600, height: 600, top: 100, right: -150,
+          transform: `translateY(${offset2}px)`,
+        }}
+      />
+      <div
+        className="absolute pointer-events-none rounded-full bg-pink-500/20 blur-[100px]"
+        style={{
+          width: 440, height: 440, bottom: -80, left: "30%",
+          transform: `translateY(${offset1 * 0.4}px)`,
+        }}
+      />
+
+      <div className="relative z-10 max-w-3xl w-full">
         <p className="text-xs uppercase tracking-[0.3em] text-white/50 mb-6">
-          ● Brochure Generator
+          <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 mr-2 align-middle" />
+          Live · Free
         </p>
-        <h1 className="font-[family-name:var(--font-serif)] text-5xl sm:text-7xl leading-[1] tracking-tight italic">
-          Any URL.<br />A branded brochure.
+        <h1 className="font-[family-name:var(--font-serif)] text-5xl sm:text-7xl md:text-8xl leading-[0.95] tracking-tight italic">
+          Any URL.<br />
+          <span className="text-white/70">A branded brochure.</span>
         </h1>
-        <p className="mt-8 text-lg text-white/70 max-w-lg mx-auto">
-          Paste a company website, pick a design template (or let AI choose),
-          get a PDF brochure with the company&apos;s real voice and colors.
-          Then edit anything.
+        <p className="mt-8 text-lg sm:text-xl text-white/70 max-w-xl mx-auto">
+          Paste a company website. We extract its real colors and vibe, write
+          the copy, and design a custom PDF brochure. Then you edit anything.
         </p>
 
-        <form onSubmit={onSubmit} className="mt-12">
+        <form onSubmit={onSubmit} className="mt-12 max-w-2xl mx-auto">
           <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="url"
@@ -184,20 +261,22 @@ function Landing({
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://stripe.com"
-              className="flex-1 px-5 py-4 bg-white/5 border border-white/15 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-white/40 transition"
+              className="flex-1 px-5 py-4 bg-white/5 border border-white/15 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-white/40 transition backdrop-blur"
             />
             <button
               type="submit"
-              className="px-7 py-4 bg-white text-black font-semibold rounded-xl hover:bg-white/90 transition whitespace-nowrap"
+              className="px-7 py-4 bg-white text-black font-semibold rounded-xl hover:bg-white/90 active:scale-95 transition whitespace-nowrap"
             >
               Continue →
             </button>
           </div>
         </form>
 
-        <p className="mt-6 text-xs text-white/40">Free · ~15 seconds · No signup</p>
+        <p className="mt-6 text-xs text-white/40">
+          Free · ~15 seconds · No signup
+        </p>
 
-        <div className="mt-16 flex flex-wrap justify-center gap-2 text-xs text-white/40">
+        <div className="mt-12 flex flex-wrap justify-center gap-2 text-xs text-white/40">
           Try:
           {["https://anthropic.com", "https://stripe.com", "https://linear.app"].map((u) => (
             <button
@@ -210,29 +289,383 @@ function Landing({
           ))}
         </div>
       </div>
+
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-xs uppercase tracking-[0.3em] text-white/30 animate-pulse">
+        Scroll to learn more ↓
+      </div>
+    </section>
+  );
+}
+
+/* ============ HOW IT WORKS ============ */
+function HowItWorksSection() {
+  const { ref, shown } = useFadeIn<HTMLDivElement>();
+  const steps = [
+    {
+      n: "01",
+      title: "Paste a URL",
+      body: "Any company website with public content — your own, a competitor, a brand you love.",
+      icon: "🔗",
+    },
+    {
+      n: "02",
+      title: "Pick a template",
+      body: "Choose from 10 hand-tuned designs (Editorial Cream, Tech Dark, Premium Noir, …) — or let AI pick the right one based on the brand.",
+      icon: "🎨",
+    },
+    {
+      n: "03",
+      title: "AI writes & designs",
+      body: "Gemini reads the site, extracts the real CSS palette, picks a vibe, and writes brochure copy from real facts (no fluff).",
+      icon: "✨",
+    },
+    {
+      n: "04",
+      title: "Edit anything",
+      body: "Rewrite any text, swap colors, change vibe, drop a different display font — the PDF re-renders in seconds.",
+      icon: "✏️",
+    },
+  ];
+  return (
+    <section
+      ref={ref}
+      className={`px-6 py-32 max-w-6xl mx-auto transition-all duration-1000 ${
+        shown ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
+      }`}
+    >
+      <p className="text-xs uppercase tracking-[0.3em] text-white/40 mb-4 text-center">
+        How it works
+      </p>
+      <h2 className="font-[family-name:var(--font-serif)] italic text-4xl sm:text-6xl text-center mb-20 leading-[1]">
+        Four steps,<br />about fifteen seconds.
+      </h2>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {steps.map((s, i) => (
+          <StepCard key={s.n} step={s} delay={i * 120} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function StepCard({
+  step,
+  delay,
+}: {
+  step: { n: string; title: string; body: string; icon: string };
+  delay: number;
+}) {
+  const { ref, shown } = useFadeIn<HTMLDivElement>();
+  return (
+    <div
+      ref={ref}
+      className={`relative p-6 rounded-2xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-white/30 transition-all duration-700`}
+      style={{
+        opacity: shown ? 1 : 0,
+        transform: shown ? "translateY(0)" : "translateY(40px)",
+        transitionDelay: `${delay}ms`,
+      }}
+    >
+      <div className="text-3xl mb-4">{step.icon}</div>
+      <div className="font-[family-name:var(--font-serif)] italic text-2xl text-white/30 mb-1">
+        {step.n}
+      </div>
+      <h3 className="text-lg font-semibold mb-2">{step.title}</h3>
+      <p className="text-sm text-white/60 leading-relaxed">{step.body}</p>
     </div>
+  );
+}
+
+/* ============ EXAMPLES ============ */
+function ExamplesSection() {
+  const { ref, shown } = useFadeIn<HTMLDivElement>();
+  const examples = [
+    {
+      name: "Anthropic",
+      url: "https://anthropic.com",
+      bg: "#E8E6DC",
+      primary: "#1F1B16",
+      accent: "#D97757",
+      ink: "#1F1B16",
+      font: "var(--font-serif)",
+      vibe: "Editorial · Cream + warm orange",
+    },
+    {
+      name: "Stripe",
+      url: "https://stripe.com",
+      bg: "#FFFFFF",
+      primary: "#1E1B4B",
+      accent: "#635BFF",
+      ink: "#0A0E27",
+      font: "var(--font-sans)",
+      vibe: "Corporate · Indigo on white",
+    },
+    {
+      name: "Linear",
+      url: "https://linear.app",
+      bg: "#101113",
+      primary: "#FFFFFF",
+      accent: "#8A8FF7",
+      ink: "#F5F5F5",
+      font: "var(--font-mono)",
+      vibe: "Minimal · Dark monospace",
+    },
+  ];
+  return (
+    <section
+      ref={ref}
+      className={`px-6 py-32 max-w-6xl mx-auto transition-all duration-1000 ${
+        shown ? "opacity-100" : "opacity-0"
+      }`}
+    >
+      <p className="text-xs uppercase tracking-[0.3em] text-white/40 mb-4 text-center">
+        It looks like the brand
+      </p>
+      <h2 className="font-[family-name:var(--font-serif)] italic text-4xl sm:text-6xl text-center mb-6 leading-[1]">
+        Every brochure is different.
+      </h2>
+      <p className="text-center text-white/60 max-w-xl mx-auto mb-16">
+        Same one-paragraph prompt, three brands, three completely different
+        outputs — because the colors, fonts, and layout come from the actual
+        site, not a template gallery.
+      </p>
+      <div className="grid md:grid-cols-3 gap-5">
+        {examples.map((e, i) => (
+          <ExampleCard key={e.name} {...e} delay={i * 150} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ExampleCard({
+  name, url, bg, primary, accent, ink, font, vibe, delay,
+}: {
+  name: string; url: string; bg: string; primary: string;
+  accent: string; ink: string; font: string; vibe: string; delay: number;
+}) {
+  const { ref, shown } = useFadeIn<HTMLDivElement>();
+  return (
+    <div
+      ref={ref}
+      className="group rounded-2xl overflow-hidden border border-white/10 hover:border-white/30 transition-all duration-700 hover:-translate-y-2"
+      style={{
+        opacity: shown ? 1 : 0,
+        transform: shown ? "translateY(0)" : "translateY(30px)",
+        transitionDelay: `${delay}ms`,
+      }}
+    >
+      {/* Mini brochure preview */}
+      <div
+        className="aspect-[3/4] p-6 flex flex-col relative overflow-hidden"
+        style={{ background: bg, color: ink }}
+      >
+        <div
+          className="absolute -top-12 -right-12 w-32 h-32 rounded-full opacity-80"
+          style={{ background: accent }}
+        />
+        <div
+          className="text-[10px] uppercase tracking-widest font-semibold opacity-60"
+          style={{ color: ink }}
+        >
+          Brochure · 2026
+        </div>
+        <div
+          className="mt-auto text-4xl leading-none font-semibold mb-2"
+          style={{
+            fontFamily: font,
+            color: primary,
+            fontStyle: font.includes("serif") ? "italic" : "normal",
+          }}
+        >
+          {name}
+        </div>
+        <div className="h-0.5 w-12 mt-1" style={{ background: accent }} />
+        <div className="space-y-1 mt-3 opacity-50">
+          <div className="h-0.5 w-full rounded" style={{ background: ink }} />
+          <div className="h-0.5 w-4/5 rounded" style={{ background: ink }} />
+          <div className="h-0.5 w-3/5 rounded" style={{ background: ink }} />
+        </div>
+      </div>
+      <div className="px-5 py-4 bg-black/60">
+        <div className="font-semibold">{name}</div>
+        <div className="text-xs text-white/50 mt-0.5">{url}</div>
+        <div className="text-xs text-white/40 mt-2">{vibe}</div>
+      </div>
+    </div>
+  );
+}
+
+/* ============ FEATURES ============ */
+function FeaturesSection() {
+  const { ref, shown } = useFadeIn<HTMLDivElement>();
+  const features = [
+    { t: "Real palette extraction", d: "We parse the site's CSS for actual hex codes — no guessing at brand colors." },
+    { t: "10 design presets", d: "From Premium Noir to Startup Lime — each preset is a distinct visual identity." },
+    { t: "AI auto-pick", d: "Gemini reads the brand voice and chooses a matching design without you lifting a finger." },
+    { t: "Edit every word", d: "Tagline off? Wrong company name? Click and type — re-render in 3 seconds." },
+    { t: "Custom palette", d: "Click extracted colors to assign as primary or accent. Or pick any hex." },
+    { t: "Free PDF download", d: "Get a real A4 PDF in your hands. No watermarks, no signup." },
+  ];
+  return (
+    <section
+      ref={ref}
+      className={`px-6 py-32 max-w-6xl mx-auto transition-all duration-1000 ${
+        shown ? "opacity-100" : "opacity-0"
+      }`}
+    >
+      <p className="text-xs uppercase tracking-[0.3em] text-white/40 mb-4 text-center">
+        What you can do
+      </p>
+      <h2 className="font-[family-name:var(--font-serif)] italic text-4xl sm:text-6xl text-center mb-16 leading-[1]">
+        Designed to bend.
+      </h2>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {features.map((f, i) => (
+          <FeatureItem key={f.t} {...f} delay={i * 80} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function FeatureItem({ t, d, delay }: { t: string; d: string; delay: number }) {
+  const { ref, shown } = useFadeIn<HTMLDivElement>();
+  return (
+    <div
+      ref={ref}
+      className="p-6 rounded-xl border border-white/10 bg-white/[0.02] hover:border-white/30 transition-all duration-700"
+      style={{
+        opacity: shown ? 1 : 0,
+        transform: shown ? "translateY(0)" : "translateY(24px)",
+        transitionDelay: `${delay}ms`,
+      }}
+    >
+      <h3 className="font-semibold mb-2">{t}</h3>
+      <p className="text-sm text-white/60 leading-relaxed">{d}</p>
+    </div>
+  );
+}
+
+/* ============ TECH ============ */
+function TechSection() {
+  const { ref, shown } = useFadeIn<HTMLDivElement>();
+  const stack = [
+    { name: "Gemini 2.5 Flash", role: "LLM for copy + design choice" },
+    { name: "BeautifulSoup", role: "scrape the site" },
+    { name: "WeasyPrint", role: "render the PDF" },
+    { name: "FastAPI · Render", role: "backend" },
+    { name: "Next.js · Vercel", role: "frontend" },
+    { name: "Supabase Storage", role: "durable PDF hosting" },
+  ];
+  return (
+    <section
+      ref={ref}
+      className={`px-6 py-32 max-w-4xl mx-auto text-center transition-all duration-1000 ${
+        shown ? "opacity-100" : "opacity-0"
+      }`}
+    >
+      <p className="text-xs uppercase tracking-[0.3em] text-white/40 mb-4">
+        Under the hood
+      </p>
+      <h2 className="font-[family-name:var(--font-serif)] italic text-4xl sm:text-5xl mb-12">
+        Built on the boring good stuff.
+      </h2>
+      <div className="grid sm:grid-cols-2 gap-3 text-left">
+        {stack.map((s, i) => (
+          <TechRow key={s.name} {...s} delay={i * 60} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function TechRow({ name, role, delay }: { name: string; role: string; delay: number }) {
+  const { ref, shown } = useFadeIn<HTMLDivElement>();
+  return (
+    <div
+      ref={ref}
+      className="flex items-baseline justify-between gap-4 px-4 py-3 rounded-lg border border-white/10 transition-all duration-700"
+      style={{
+        opacity: shown ? 1 : 0,
+        transform: shown ? "translateX(0)" : "translateX(-20px)",
+        transitionDelay: `${delay}ms`,
+      }}
+    >
+      <span className="font-mono font-medium text-sm">{name}</span>
+      <span className="text-xs text-white/40">{role}</span>
+    </div>
+  );
+}
+
+/* ============ FINAL CTA ============ */
+function FinalCTASection({
+  url, setUrl, onSubmit,
+}: {
+  url: string; setUrl: (s: string) => void; onSubmit: (e: React.FormEvent) => void;
+}) {
+  const { ref, shown } = useFadeIn<HTMLDivElement>();
+  return (
+    <section
+      ref={ref}
+      className={`relative px-6 py-32 text-center overflow-hidden transition-all duration-1000 ${
+        shown ? "opacity-100" : "opacity-0"
+      }`}
+    >
+      {/* Big gradient ring */}
+      <div className="absolute pointer-events-none inset-0 flex items-center justify-center">
+        <div
+          className="rounded-full"
+          style={{
+            width: 700, height: 700,
+            background:
+              "conic-gradient(from 0deg, rgba(124,58,237,0.3), rgba(6,182,212,0.3), rgba(236,72,153,0.3), rgba(251,191,36,0.3), rgba(124,58,237,0.3))",
+            filter: "blur(80px)",
+            opacity: 0.5,
+          }}
+        />
+      </div>
+      <div className="relative z-10 max-w-2xl mx-auto">
+        <h2 className="font-[family-name:var(--font-serif)] italic text-5xl sm:text-7xl leading-[0.95] mb-8">
+          Try it.<br />Takes a minute.
+        </h2>
+        <p className="text-white/70 mb-10">
+          Free. No signup. Your only cost is the time to paste a URL.
+        </p>
+        <form onSubmit={onSubmit} className="max-w-xl mx-auto">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <input
+              type="url"
+              required
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://yourcompany.com"
+              className="flex-1 px-5 py-4 bg-white/5 border border-white/15 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-white/40 transition backdrop-blur"
+            />
+            <button
+              type="submit"
+              className="px-7 py-4 bg-white text-black font-semibold rounded-xl hover:bg-white/90 active:scale-95 transition whitespace-nowrap"
+            >
+              Make mine →
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
   );
 }
 
 /* ====================================================== TEMPLATE PICKER */
 function TemplatePicker({
-  presets,
-  sourceUrl,
-  onPick,
-  onBack,
+  presets, sourceUrl, onPick, onBack,
 }: {
-  presets: Preset[];
-  sourceUrl: string;
-  onPick: (preset: string | null) => void;
-  onBack: () => void;
+  presets: Preset[]; sourceUrl: string;
+  onPick: (preset: string | null) => void; onBack: () => void;
 }) {
   return (
     <div className="flex-1 px-6 py-10 max-w-6xl mx-auto w-full">
       <div className="flex items-center justify-between mb-8">
-        <button
-          onClick={onBack}
-          className="text-sm text-white/60 hover:text-white transition"
-        >
+        <button onClick={onBack} className="text-sm text-white/60 hover:text-white transition">
           ← change URL
         </button>
         <span className="text-xs uppercase tracking-[0.3em] text-white/40">
@@ -241,9 +674,7 @@ function TemplatePicker({
       </div>
 
       <div className="text-center mb-10">
-        <p className="text-xs uppercase tracking-[0.3em] text-white/50 mb-3">
-          Step 2 of 3
-        </p>
+        <p className="text-xs uppercase tracking-[0.3em] text-white/50 mb-3">Step 2 of 3</p>
         <h2 className="font-[family-name:var(--font-serif)] italic text-4xl sm:text-5xl">
           Pick a template.
         </h2>
@@ -252,38 +683,27 @@ function TemplatePicker({
         </p>
       </div>
 
-      {/* AI choose — featured card */}
       <button
         onClick={() => onPick(null)}
         className="group w-full mb-6 p-6 rounded-2xl border-2 border-white/20 bg-gradient-to-br from-violet-500/20 via-cyan-500/15 to-pink-500/20 hover:border-white/50 transition text-left flex items-center gap-5"
       >
-        <div className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center text-2xl flex-shrink-0">
-          ✨
-        </div>
+        <div className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center text-2xl flex-shrink-0">✨</div>
         <div className="flex-1">
           <div className="flex items-baseline gap-3 mb-1">
-            <h3 className="font-[family-name:var(--font-serif)] italic text-2xl">
-              Let AI design it
-            </h3>
-            <span className="text-xs uppercase tracking-[0.2em] text-white/50">
-              recommended
-            </span>
+            <h3 className="font-[family-name:var(--font-serif)] italic text-2xl">Let AI design it</h3>
+            <span className="text-xs uppercase tracking-[0.2em] text-white/50">recommended</span>
           </div>
           <p className="text-white/70 text-sm">
             We&apos;ll analyze {sourceUrl ? new URL(sourceUrl).hostname : "the site"}&apos;s
             real colors, fonts and vibe — then pick the design that fits.
           </p>
         </div>
-        <span className="text-2xl text-white/40 group-hover:text-white transition">
-          →
-        </span>
+        <span className="text-2xl text-white/40 group-hover:text-white transition">→</span>
       </button>
 
       <div className="relative my-6 flex items-center gap-4">
         <div className="flex-1 h-px bg-white/10" />
-        <span className="text-xs uppercase tracking-[0.3em] text-white/40">
-          Or pick one of 10
-        </span>
+        <span className="text-xs uppercase tracking-[0.3em] text-white/40">Or pick one of 10</span>
         <div className="flex-1 h-px bg-white/10" />
       </div>
 
@@ -303,17 +723,14 @@ function TemplatePicker({
 
 function PresetCard({ preset, onClick }: { preset: Preset; onClick: () => void }) {
   const fontFamily =
-    preset.display_font === "serif"
-      ? "var(--font-serif)"
-      : preset.display_font === "mono"
-      ? "var(--font-mono)"
-      : "var(--font-sans)";
+    preset.display_font === "serif" ? "var(--font-serif)"
+    : preset.display_font === "mono" ? "var(--font-mono)"
+    : "var(--font-sans)";
   return (
     <button
       onClick={onClick}
-      className="group rounded-xl overflow-hidden border border-white/10 hover:border-white/40 transition text-left flex flex-col"
+      className="group rounded-xl overflow-hidden border border-white/10 hover:border-white/40 hover:-translate-y-1 transition text-left flex flex-col"
     >
-      {/* Mini brochure preview rendered in real preset colors */}
       <div
         className="aspect-[3/4] p-3 flex flex-col gap-1.5 relative overflow-hidden"
         style={{ background: preset.background, color: preset.ink }}
@@ -322,15 +739,15 @@ function PresetCard({ preset, onClick }: { preset: Preset; onClick: () => void }
           className="absolute -top-6 -right-6 w-16 h-16 rounded-full"
           style={{ background: preset.accent, opacity: 0.85 }}
         />
-        <div
-          className="text-[10px] uppercase tracking-widest font-semibold opacity-70"
-          style={{ color: preset.muted }}
-        >
+        <div className="text-[10px] uppercase tracking-widest font-semibold opacity-70" style={{ color: preset.muted }}>
           Brochure
         </div>
         <div
           className="mt-auto text-xl leading-tight font-semibold"
-          style={{ fontFamily, color: preset.primary, fontStyle: preset.display_font === "serif" ? "italic" : "normal" }}
+          style={{
+            fontFamily, color: preset.primary,
+            fontStyle: preset.display_font === "serif" ? "italic" : "normal",
+          }}
         >
           Company.
         </div>
@@ -346,7 +763,6 @@ function PresetCard({ preset, onClick }: { preset: Preset; onClick: () => void }
         </div>
       </div>
 
-      {/* Card footer */}
       <div className="px-3 py-2.5 bg-black/40 group-hover:bg-black/60 transition">
         <div className="text-sm font-semibold">{preset.name}</div>
         <div className="text-[11px] text-white/50 mt-0.5">{preset.tagline}</div>
@@ -401,14 +817,8 @@ function ErrorView({ error, onReset }: { error: string; onReset: () => void }) {
 
 /* ============================================================ EDITOR */
 function Editor({
-  initial,
-  sourceUrl,
-  onReset,
-}: {
-  initial: Result;
-  sourceUrl: string;
-  onReset: () => void;
-}) {
+  initial, sourceUrl, onReset,
+}: { initial: Result; sourceUrl: string; onReset: () => void }) {
   const [brochure, setBrochure] = useState<Brochure>(initial.brochure);
   const [design, setDesign] = useState<Design>(initial.design);
   const [pdfUrl, setPdfUrl] = useState(initial.pdf_url);
@@ -423,7 +833,6 @@ function Editor({
     setBrochure((b) => ({ ...b, ...patch }));
     setDirty(true);
   }, []);
-
   const updateDesign = useCallback((patch: Partial<Design>) => {
     setDesign((d) => ({ ...d, ...patch }));
     setDirty(true);
@@ -456,9 +865,7 @@ function Editor({
           ← New brochure
         </button>
         <div className="flex items-center gap-3">
-          {dirty && (
-            <span className="text-xs text-amber-300 uppercase tracking-widest">● unsaved</span>
-          )}
+          {dirty && <span className="text-xs text-amber-300 uppercase tracking-widest">● unsaved</span>}
           <button
             onClick={applyChanges}
             disabled={!dirty || rerendering}
@@ -493,9 +900,7 @@ function Editor({
         <div className="bg-zinc-900 flex flex-col min-h-[600px]">
           <div className="px-5 py-3 border-b border-white/10 flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/40">
             <span>Live preview</span>
-            <a href={pdfFull} target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-white transition">
-              Open ↗
-            </a>
+            <a href={pdfFull} target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-white transition">Open ↗</a>
           </div>
           <iframe key={pdfKey} src={pdfFull} className="flex-1 w-full bg-white" title={`${brochure.company_name} brochure`} />
         </div>
@@ -506,14 +911,8 @@ function Editor({
 
 /* ============================================================ DESIGN PANEL */
 function DesignPanel({
-  design,
-  palette,
-  updateDesign,
-}: {
-  design: Design;
-  palette: Palette;
-  updateDesign: (p: Partial<Design>) => void;
-}) {
+  design, palette, updateDesign,
+}: { design: Design; palette: Palette; updateDesign: (p: Partial<Design>) => void }) {
   return (
     <div className="space-y-5">
       <div>
@@ -526,9 +925,7 @@ function DesignPanel({
               className={`px-3 py-2 text-xs rounded-md border transition capitalize ${
                 design.vibe === v ? "bg-white text-black border-white" : "border-white/15 text-white/70 hover:border-white/40"
               }`}
-            >
-              {v}
-            </button>
+            >{v}</button>
           ))}
         </div>
       </div>
@@ -543,9 +940,7 @@ function DesignPanel({
               className={`px-3 py-2 text-xs rounded-md border transition capitalize ${
                 design.display_font === f ? "bg-white text-black border-white" : "border-white/15 text-white/70 hover:border-white/40"
               }`}
-            >
-              {f}
-            </button>
+            >{f}</button>
           ))}
         </div>
       </div>
@@ -593,16 +988,8 @@ function Divider({ label }: { label: string }) {
 }
 
 function Field({
-  label,
-  value,
-  onChange,
-  multiline,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  multiline?: boolean;
-}) {
+  label, value, onChange, multiline,
+}: { label: string; value: string; onChange: (v: string) => void; multiline?: boolean }) {
   return (
     <div>
       <label className="block text-xs uppercase tracking-[0.25em] text-white/40 mb-1.5">{label}</label>
@@ -616,14 +1003,8 @@ function Field({
 }
 
 function ListField({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string[];
-  onChange: (v: string[]) => void;
-}) {
+  label, value, onChange,
+}: { label: string; value: string[]; onChange: (v: string[]) => void }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5">
@@ -634,9 +1015,7 @@ function ListField({
         {value.map((item, i) => (
           <div key={i} className="flex gap-1.5">
             <input value={item} onChange={(e) => {
-              const next = [...value];
-              next[i] = e.target.value;
-              onChange(next);
+              const next = [...value]; next[i] = e.target.value; onChange(next);
             }} className="flex-1 bg-white/5 border border-white/10 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-white/40 transition" />
             <button onClick={() => onChange(value.filter((_, j) => j !== i))} className="px-2 text-white/40 hover:text-red-400 transition" title="remove">×</button>
           </div>
