@@ -71,7 +71,9 @@ function useReveal<T extends HTMLElement>(delay = 0) {
           }
         });
       },
-      { threshold: 0.12, rootMargin: "0px 0px -60px 0px" }
+      // Fire as soon as 1px enters; also pre-trigger 120px before entering
+      // so the reveal is mid-animation by the time the user sees it.
+      { threshold: 0.01, rootMargin: "0px 0px 120px 0px" }
     );
     obs.observe(el);
     return () => {
@@ -172,25 +174,11 @@ function Landing({
       <HeroSection url={url} setUrl={setUrl} onSubmit={onSubmit} />
       <HowItWorksSection />
       <ExamplesSection />
-      <FeaturesSection />
-      <TechSection />
-      <FinalCTASection url={url} setUrl={setUrl} onSubmit={onSubmit} />
-      <footer className="border-t border-white/10 px-6 py-8 text-center text-xs text-white/40">
-        Built with FastAPI · Gemini · WeasyPrint · Next.js · Supabase ·
-        <a
-          href="https://github.com/Pallak-08/brochure-generator"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="ml-2 underline underline-offset-2 hover:text-white transition"
-        >
-          source on github
-        </a>
-      </footer>
     </div>
   );
 }
 
-/* ============ HERO — solid dot-grid background, no gradient banding ============ */
+/* ============ HERO ============ */
 function HeroSection({
   url,
   setUrl,
@@ -201,10 +189,7 @@ function HeroSection({
   onSubmit: (e: React.FormEvent) => void;
 }) {
   return (
-    <section className="dot-grid relative min-h-screen flex flex-col items-center justify-center px-6 py-16 text-center overflow-hidden">
-      {/* Hairline frame — clean geometric accent, no gradients */}
-      <div className="absolute inset-6 sm:inset-10 border border-white/[0.06] pointer-events-none rounded-[2px]" />
-
+    <section className="aurora relative min-h-screen flex flex-col items-center justify-center px-6 py-16 text-center overflow-hidden">
       <div className="relative z-10 max-w-3xl w-full">
         <p className="text-xs uppercase tracking-[0.3em] text-white/50 mb-6">
           <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 mr-2 align-middle" />
@@ -256,9 +241,6 @@ function HeroSection({
         </div>
       </div>
 
-      <div className="scroll-hint absolute bottom-8 left-1/2 -translate-x-1/2 text-xs uppercase tracking-[0.3em] text-white/40">
-        Scroll ↓
-      </div>
     </section>
   );
 }
@@ -442,129 +424,6 @@ function ExampleCard({
   );
 }
 
-/* ============ FEATURES ============ */
-function FeaturesSection() {
-  const ref = useReveal<HTMLDivElement>();
-  const features = [
-    { t: "Real palette extraction", d: "We parse the site's CSS for actual hex codes — no guessing at brand colors." },
-    { t: "10 design presets", d: "From Premium Noir to Startup Lime — each preset is a distinct visual identity." },
-    { t: "AI auto-pick", d: "Gemini reads the brand voice and chooses a matching design without you lifting a finger." },
-    { t: "Edit every word", d: "Tagline off? Wrong company name? Click and type — re-render in 3 seconds." },
-    { t: "Custom palette", d: "Click extracted colors to assign as primary or accent. Or pick any hex." },
-    { t: "Free PDF download", d: "Get a real A4 PDF in your hands. No watermarks, no signup." },
-  ];
-  return (
-    <section ref={ref} className="fade-up px-6 py-32 max-w-6xl mx-auto">
-      <p className="text-xs uppercase tracking-[0.3em] text-white/40 mb-4 text-center">
-        What you can do
-      </p>
-      <h2 className="font-[family-name:var(--font-serif)] italic text-4xl sm:text-6xl text-center mb-16 leading-[1]">
-        Designed to bend.
-      </h2>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {features.map((f, i) => (
-          <FeatureItem key={f.t} {...f} delay={i * 80} />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function FeatureItem({ t, d, delay }: { t: string; d: string; delay: number }) {
-  const ref = useReveal<HTMLDivElement>(delay);
-  return (
-    <div
-      ref={ref}
-      className="fade-up p-6 rounded-xl border border-white/10 bg-white/[0.02] hover:border-white/30"
-    >
-      <h3 className="font-semibold mb-2">{t}</h3>
-      <p className="text-sm text-white/60 leading-relaxed">{d}</p>
-    </div>
-  );
-}
-
-/* ============ TECH ============ */
-function TechSection() {
-  const ref = useReveal<HTMLDivElement>();
-  const stack = [
-    { name: "Gemini 2.5 Flash", role: "LLM for copy + design choice" },
-    { name: "BeautifulSoup", role: "scrape the site" },
-    { name: "WeasyPrint", role: "render the PDF" },
-    { name: "FastAPI · Render", role: "backend" },
-    { name: "Next.js · Vercel", role: "frontend" },
-    { name: "Supabase Storage", role: "durable PDF hosting" },
-  ];
-  return (
-    <section ref={ref} className="fade-up px-6 py-32 max-w-4xl mx-auto text-center">
-      <p className="text-xs uppercase tracking-[0.3em] text-white/40 mb-4">
-        Under the hood
-      </p>
-      <h2 className="font-[family-name:var(--font-serif)] italic text-4xl sm:text-5xl mb-12">
-        Built on the boring good stuff.
-      </h2>
-      <div className="grid sm:grid-cols-2 gap-3 text-left">
-        {stack.map((s, i) => (
-          <TechRow key={s.name} {...s} delay={i * 60} />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function TechRow({ name, role, delay }: { name: string; role: string; delay: number }) {
-  const ref = useReveal<HTMLDivElement>(delay);
-  return (
-    <div
-      ref={ref}
-      className="slide-right flex items-baseline justify-between gap-4 px-4 py-3 rounded-lg border border-white/10"
-    >
-      <span className="font-mono font-medium text-sm">{name}</span>
-      <span className="text-xs text-white/40">{role}</span>
-    </div>
-  );
-}
-
-/* ============ FINAL CTA ============ */
-function FinalCTASection({
-  url, setUrl, onSubmit,
-}: {
-  url: string; setUrl: (s: string) => void; onSubmit: (e: React.FormEvent) => void;
-}) {
-  const ref = useReveal<HTMLDivElement>();
-  return (
-    <section ref={ref} className="fade-up relative px-6 py-32 text-center overflow-hidden">
-      {/* Hairline frame — matches hero, no gradient banding */}
-      <div className="absolute inset-6 sm:inset-10 border border-white/[0.06] pointer-events-none rounded-[2px]" />
-      <div className="relative z-10 max-w-2xl mx-auto">
-        <h2 className="font-[family-name:var(--font-serif)] italic text-5xl sm:text-7xl leading-[0.95] mb-8">
-          Try it.<br />Takes a minute.
-        </h2>
-        <p className="text-white/70 mb-10">
-          Free. No signup. Your only cost is the time to paste a URL.
-        </p>
-        <form onSubmit={onSubmit} className="max-w-xl mx-auto">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <input
-              type="url"
-              required
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://yourcompany.com"
-              className="flex-1 px-5 py-4 bg-white/5 border border-white/15 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-white/40 transition backdrop-blur"
-            />
-            <button
-              type="submit"
-              className="px-7 py-4 bg-white text-black font-semibold rounded-xl hover:bg-white/90 active:scale-95 transition whitespace-nowrap"
-            >
-              Make mine →
-            </button>
-          </div>
-        </form>
-      </div>
-    </section>
-  );
-}
-
 /* ====================================================== TEMPLATE PICKER */
 function TemplatePicker({
   presets, sourceUrl, onPick, onBack,
@@ -684,7 +543,7 @@ function PresetCard({ preset, onClick }: { preset: Preset; onClick: () => void }
 /* ============================================================ LOADING */
 function Loading({ step }: { step: string }) {
   return (
-    <div className="dot-grid flex-1 flex flex-col items-center justify-center px-6 py-16">
+    <div className="aurora flex-1 flex flex-col items-center justify-center px-6 py-16">
       <div className="flex gap-2 mb-12">
         {[0, 1, 2].map((i) => (
           <span
