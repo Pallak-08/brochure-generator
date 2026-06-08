@@ -24,28 +24,41 @@ Absolute URLs. At most 5 links."""
 
 BROCHURE_AND_DESIGN_PROMPT = """You are a senior brand designer and copywriter. You are given:
 1. SCRAPED CONTENT from a company's website
-2. EXTRACTED COLORS from the actual site's CSS
+2. EXTRACTED COLORS from the actual site's CSS (frequency-ordered)
 3. EXTRACTED FONT NAMES used on the site
 
 Your job has two parts:
 
 A) **Write the brochure copy** — concrete, brand-true facts. No marketing fluff.
 
-B) **Design a brochure that matches THIS specific company's vibe.**
-   Anthropic is calm, scholarly, beige/cream/black with warm accents — NOT loud or playful.
-   Stripe is bold, technical, indigo + black + white — clean and engineering-led.
-   Etsy is warm, hand-crafted, orange + cream — friendly and organic.
-   Linear is dark, minimal, near-monochrome with violet — premium and quiet.
+B) **Design a brochure that is unmistakably THIS specific company.**
 
-   Use the EXTRACTED COLORS as your primary inspiration. Pick the ones that genuinely \
-represent the brand. If the site is mostly beige and black, the brochure must be beige and black.
+CRITICAL DESIGN RULES — read carefully, this is where AI usually fails:
 
-   The "vibe" you choose controls layout: choose ONE of:
-   - "minimal":   lots of whitespace, mono/sans typography, restrained accents (Linear, Notion)
-   - "editorial": serif display, magazine layout, premium feel (Anthropic, The Browser Company)
-   - "playful":   bold blocks, vibrant colors, geometric shapes (Figma, Replit, Vercel)
-   - "corporate":clean sans, structured grid, navy/grey palette (Stripe, AWS, IBM)
-   - "warm":     cream + earthy accents, soft serifs, organic shapes (Etsy, Substack)
+1. **BE BRAVE WITH COLOR. Mediocre = grey + grey + light-blue. Don't be mediocre.**
+   The brochure must be recognizable as the brand at a glance, even with no logo.
+   - Anthropic → unmistakably warm cream (#e8e6dc-ish) + their iconic terracotta orange (#d97757-ish) + near-black text. NEVER blue or grey as primary.
+   - Stripe → unmistakably indigo (#635bff / #5469d4) + white + black text. NEVER pastel.
+   - Linear → near-black background + violet accent + white text. Dark mode.
+   - Etsy → warm cream + bright orange + dark brown text.
+   - Notion → off-white + black + soft accent. Minimalist.
+
+2. **PICK THE SIGNATURE COLOR FROM THE EXTRACTED PALETTE.** The signature color is the most saturated, non-grey, non-white color in the palette — usually what appears on the site's CTAs and links. Make it `primary` OR `accent`. Don't bury it in `muted`.
+
+3. **INK MUST BE READABLE.** Use near-black (#1A1A1A, #0F0F0F) or dark brand-tinted text (e.g. #2E1B0F for warm brands). NEVER pick a light grey like #5d6c7b — that's the LLM safe choice and looks generic.
+
+4. **BACKGROUND COLOR SETS THE MOOD.**
+   - Cream/warm sites → cream background (#F5EFE3-ish)
+   - Tech/clean sites → pure white or very light grey
+   - Dark mode brands (Linear, Vercel) → near-black background, light ink
+   - Bold/playful brands → can use a saturated background
+
+5. **PICK VIBE BASED ON THE BRAND**, not on what you think looks nice. Each vibe TOTALLY changes the layout:
+   - "minimal":   no cover page, all content on one page, lots of whitespace, mono/sans (Linear, Notion, Vercel)
+   - "editorial": magazine layout, big serif display, drop cap feel (Anthropic, The Browser Company, Stripe Press)
+   - "playful":   full-bleed vivid color cover with multiple geometric shapes (Figma, Replit, Framer)
+   - "corporate":structured grid, clean sans, no decoration (Stripe, AWS, IBM, banks)
+   - "warm":     organic blob shapes, cream paper, soft serif (Etsy, Substack, Mailchimp)
 
 Respond ONLY with JSON:
 {
@@ -61,17 +74,17 @@ Respond ONLY with JSON:
   },
   "design": {
     "vibe": "minimal | editorial | playful | corporate | warm",
-    "background": "#hex — main paper color (often near-white or cream)",
-    "primary":    "#hex — dominant brand color used for headings and key blocks",
-    "accent":     "#hex — secondary color for highlights and CTAs",
-    "ink":        "#hex — body text color (usually near-black or deep brown)",
-    "muted":      "#hex — captions and dividers",
+    "background": "#hex (paper / page background)",
+    "primary":    "#hex (dominant brand color — headings + key blocks)",
+    "accent":     "#hex (highlight color — CTAs, eyebrows, splash shapes)",
+    "ink":        "#hex (body text — near-black, NEVER a light grey)",
+    "muted":      "#hex (captions and dividers)",
     "display_font": "serif | sans | mono",
-    "reasoning":  "one sentence on why these choices match the brand"
+    "reasoning":  "one sentence on why these choices make it FEEL like this brand"
   }
 }
 
-Use real hex codes from the extracted palette when possible. If the palette is empty or thin, pick colors that match the brand vibe based on the scraped content."""
+USE COLORS FROM THE EXTRACTED PALETTE when they exist — they are the brand's actual colors. Pick them BOLDLY. If the palette is empty, infer from the brand's category and copy tone."""
 
 
 @lru_cache(maxsize=1)

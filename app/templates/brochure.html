@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>{{ company_name }} — Brochure</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fraunces:opsz,wght,SOFT@9..144,400;9..144,500;9..144,600;9..144,700&family=Instrument+Serif&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Instrument+Serif&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
   @page { size: A4; margin: 0; }
   * { box-sizing: border-box; }
@@ -15,7 +15,8 @@
     --accent:    {{ accent }};
     --ink:       {{ ink }};
     --muted:     {{ muted }};
-    --primary-soft: {{ primary }}1F; /* ~12% alpha tint */
+    --primary-soft: {{ primary }}1F;
+    --accent-soft:  {{ accent }}1F;
   }
 
   body {
@@ -26,22 +27,19 @@
     line-height: 1.55;
     font-weight: 400;
   }
-  /* Default font is sans — overridden by vibe classes below */
   body, p, li { font-family: 'Inter', -apple-system, sans-serif; }
   h1, h2, h3 { font-family: 'Inter', -apple-system, sans-serif; }
 
-  /* ============ DISPLAY FONT PER vibe/display_font ============ */
   body.font-serif h1, body.font-serif h2, body.font-serif .display {
     font-family: 'Fraunces', 'Instrument Serif', Georgia, serif;
   }
   body.font-serif .cover-title { font-family: 'Instrument Serif', Georgia, serif; }
-
-  body.font-mono h1, body.font-mono h2, body.font-mono .display {
+  body.font-mono h1, body.font-mono h2, body.font-mono .display,
+  body.font-mono .topbar .mark, body.font-mono .eyebrow {
     font-family: 'IBM Plex Mono', 'SF Mono', monospace;
-    letter-spacing: -0.3pt;
   }
 
-  /* ====================== COVER PAGE ======================= */
+  /* ================================================================ COVER */
   .cover {
     height: 297mm;
     padding: 50pt;
@@ -53,15 +51,14 @@
     display: flex;
     flex-direction: column;
   }
-  /* Decorative cover shapes — adjust by vibe */
   .cover .shape-a, .cover .shape-b, .cover .shape-c {
     position: absolute;
     pointer-events: none;
   }
-  /* Default (corporate / minimal): subtle */
+  /* Default: subtle */
   .cover .shape-a {
     top: -120pt; right: -120pt; width: 320pt; height: 320pt;
-    border-radius: 50%; background: var(--accent); opacity: 0.85;
+    border-radius: 50%; background: var(--accent);
   }
   .cover .shape-b {
     bottom: -100pt; left: -100pt; width: 260pt; height: 260pt;
@@ -69,198 +66,78 @@
   }
   .cover .shape-c { display: none; }
 
-  /* Editorial: smaller shapes, more whitespace */
-  body.vibe-editorial .cover .shape-a {
-    top: -60pt; right: -60pt; width: 220pt; height: 220pt;
-    opacity: 0.95;
-  }
-  body.vibe-editorial .cover .shape-b { display: none; }
-  body.vibe-editorial .cover .shape-c {
-    display: block;
-    bottom: 50pt; right: 50pt;
-    width: 70pt; height: 1.5pt;
-    background: var(--bg); opacity: 0.5;
-  }
-
-  /* Warm: organic blob shapes */
-  body.vibe-warm .cover .shape-a {
-    top: -100pt; right: -80pt; width: 340pt; height: 280pt;
-    border-radius: 60% 40% 65% 35% / 50% 60% 40% 50%;
-    opacity: 0.9;
-  }
-  body.vibe-warm .cover .shape-b {
-    bottom: -60pt; left: -40pt; width: 200pt; height: 200pt;
-    border-radius: 50% 50% 40% 60%;
-    border: none; background: var(--accent); opacity: 0.4;
-  }
-
-  /* Playful: scatter of shapes + accent dot */
-  body.vibe-playful .cover .shape-a {
-    top: -100pt; right: -100pt; width: 380pt; height: 380pt;
-    opacity: 1;
-  }
-  body.vibe-playful .cover .shape-b {
-    bottom: 90pt; right: 65pt; width: 90pt; height: 90pt;
-    border-radius: 50%; border: none;
-    background: var(--bg); opacity: 1;
-  }
-  body.vibe-playful .cover .shape-c {
-    display: block;
-    bottom: -100pt; left: -100pt; width: 280pt; height: 280pt;
-    border-radius: 50%; border: 12pt solid var(--accent);
-  }
-
-  /* Minimal: almost nothing */
-  body.vibe-minimal .cover {
-    background: var(--bg); color: var(--ink);
-  }
-  body.vibe-minimal .cover .shape-a {
-    top: 80pt; right: 80pt; width: 60pt; height: 60pt;
-    border-radius: 50%; background: var(--primary); opacity: 1;
-  }
-  body.vibe-minimal .cover .shape-b { display: none; }
-  body.vibe-minimal .cover .cover-eyebrow { color: var(--muted); border-color: var(--muted); }
-  body.vibe-minimal .cover .cover-tag { color: var(--ink); opacity: 0.8; }
-  body.vibe-minimal .cover .cover-foot { color: var(--muted); }
-  body.vibe-minimal .cover .cover-foot .badge { background: var(--ink); color: var(--bg); }
-
   .cover-eyebrow {
-    font-size: 8.5pt;
-    letter-spacing: 3pt;
-    text-transform: uppercase;
-    font-weight: 600;
-    z-index: 3;
-    display: inline-block;
-    border: 1.2pt solid currentColor;
-    padding: 5pt 10pt;
-    align-self: flex-start;
-    opacity: 0.95;
+    font-size: 8.5pt; letter-spacing: 3pt; text-transform: uppercase;
+    font-weight: 600; z-index: 3; display: inline-block;
+    border: 1.2pt solid currentColor; padding: 5pt 10pt;
+    align-self: flex-start; opacity: 0.95;
   }
   .cover-title {
-    margin: auto 0 0;
-    font-size: 64pt;
-    line-height: 1.0;
-    font-weight: 700;
-    letter-spacing: -1.5pt;
-    z-index: 3;
+    margin: auto 0 0; font-size: 64pt; line-height: 1;
+    font-weight: 700; letter-spacing: -1.5pt; z-index: 3;
     max-width: 380pt;
   }
-  body.font-serif .cover-title { font-weight: 400; font-size: 78pt; letter-spacing: -2pt; }
-  body.font-mono   .cover-title { font-weight: 500; font-size: 48pt; letter-spacing: -0.5pt; }
-
   .cover-tag {
-    margin: 22pt 0 0;
-    font-size: 15pt;
-    line-height: 1.45;
-    font-weight: 300;
-    max-width: 420pt;
-    z-index: 3;
-    opacity: 0.94;
+    margin: 22pt 0 0; font-size: 15pt; line-height: 1.45;
+    font-weight: 300; max-width: 420pt; z-index: 3; opacity: 0.94;
   }
-  body.font-serif .cover-tag { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-size: 17pt; font-weight: 400; }
-
   .cover-foot {
-    margin-top: 28pt;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-end;
-    font-size: 8.5pt;
-    letter-spacing: 2pt;
-    text-transform: uppercase;
-    z-index: 3;
-    font-weight: 500;
-    opacity: 0.85;
+    margin-top: 28pt; display: flex; justify-content: space-between;
+    align-items: flex-end; font-size: 8.5pt; letter-spacing: 2pt;
+    text-transform: uppercase; z-index: 3; font-weight: 500; opacity: 0.85;
   }
   .cover-foot .badge {
     background: var(--bg); color: var(--primary);
-    padding: 8pt 12pt; font-weight: 700; letter-spacing: 2.5pt;
-    opacity: 1;
+    padding: 8pt 12pt; font-weight: 700; letter-spacing: 2.5pt; opacity: 1;
   }
 
-  /* ====================== CONTENT PAGES ======================= */
-  .page {
-    padding: 38pt 44pt 50pt;
-    background: var(--bg);
-  }
+  /* ============================================================ CONTENT */
+  .page { padding: 38pt 44pt 50pt; background: var(--bg); }
 
   .topbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-bottom: 14pt;
-    border-bottom: 1.5pt solid var(--ink);
-    margin-bottom: 28pt;
+    display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: 14pt; border-bottom: 1.5pt solid var(--ink); margin-bottom: 28pt;
   }
   .topbar .mark {
     display: flex; align-items: center; gap: 8pt;
-    font-weight: 700; font-size: 11pt; letter-spacing: 0.3pt;
-    color: var(--ink);
+    font-weight: 700; font-size: 11pt; letter-spacing: 0.3pt; color: var(--ink);
   }
   .topbar .mark .dot {
-    width: 14pt; height: 14pt; border-radius: 50%;
-    background: var(--primary);
-    display: inline-block;
+    width: 14pt; height: 14pt; border-radius: 50%; background: var(--primary);
   }
-  body.vibe-warm .topbar .mark .dot { border-radius: 40% 60% 50% 50%; }
   .topbar .meta { font-size: 8pt; color: var(--muted); letter-spacing: 1.5pt; text-transform: uppercase; }
 
-  /* Section pattern: eyebrow + heading + body */
   section { margin-bottom: 24pt; page-break-inside: avoid; }
   .eyebrow {
     font-size: 8pt; letter-spacing: 2.5pt; text-transform: uppercase;
-    color: var(--accent); font-weight: 700;
-    margin-bottom: 5pt;
+    color: var(--accent); font-weight: 700; margin-bottom: 5pt;
   }
   h2 {
-    font-size: 22pt; line-height: 1.05;
-    font-weight: 700; letter-spacing: -0.5pt;
-    margin: 0 0 10pt; color: var(--ink);
+    font-size: 22pt; line-height: 1.05; font-weight: 700;
+    letter-spacing: -0.5pt; margin: 0 0 10pt; color: var(--ink);
   }
   body.font-serif h2 { font-weight: 500; }
   section p { margin: 0; color: var(--ink); }
 
-  /* ABOUT — large pull treatment */
   .about-block {
-    padding: 22pt 24pt;
-    background: var(--primary-soft);
+    padding: 22pt 24pt; background: var(--primary-soft);
     border-left: 3pt solid var(--accent);
-    font-size: 12pt;
-    line-height: 1.55;
-    margin-top: 6pt;
+    font-size: 12pt; line-height: 1.55; margin-top: 6pt;
   }
-  body.font-serif .about-block { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-size: 14pt; }
+  body.font-serif .about-block {
+    font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-size: 14pt;
+  }
 
-  /* WHAT / WHY two-col grid */
-  .grid {
-    display: flex;
-    gap: 18pt;
-    margin-bottom: 24pt;
-    page-break-inside: avoid;
-  }
+  .grid { display: flex; gap: 18pt; margin-bottom: 24pt; page-break-inside: avoid; }
   .grid .col { flex: 1; }
   .panel {
-    padding: 22pt;
-    background: var(--bg);
-    border: 1.5pt solid var(--ink);
-    height: 100%;
+    padding: 22pt; background: var(--bg); border: 1.5pt solid var(--ink); height: 100%;
   }
-  .panel.dark {
-    background: var(--ink); color: var(--bg);
-    border-color: var(--ink);
-  }
+  .panel.dark { background: var(--ink); color: var(--bg); border-color: var(--ink); }
   .panel.dark .eyebrow { color: var(--accent); }
   .panel.dark h3 { color: var(--bg); }
   .panel.dark ul.feature li { border-color: rgba(255,255,255,0.18); color: var(--bg); }
   .panel.dark ul.feature li::before { background: var(--accent); color: var(--ink); }
-
-  /* In minimal vibe, panels lose borders and become whitespace-driven */
-  body.vibe-minimal .panel { border: none; padding: 0 0 20pt; background: transparent; }
-  body.vibe-minimal .panel.dark { background: transparent; color: var(--ink); }
-  body.vibe-minimal .panel.dark h3 { color: var(--ink); }
-  body.vibe-minimal .panel.dark .eyebrow { color: var(--accent); }
-  body.vibe-minimal .panel.dark ul.feature li { color: var(--ink); border-color: var(--muted); }
-  body.vibe-minimal .panel.dark ul.feature li::before { background: var(--primary); color: var(--bg); }
-
   .panel .eyebrow { margin-bottom: 4pt; }
   .panel h3 {
     font-size: 17pt; margin: 0 0 12pt; font-weight: 700;
@@ -268,55 +145,26 @@
   }
   body.font-serif .panel h3 { font-weight: 500; }
 
-  ul.feature {
-    list-style: none; padding: 0; margin: 0;
-  }
+  ul.feature { list-style: none; padding: 0; margin: 0; }
   ul.feature li {
-    padding: 8pt 0 8pt 26pt;
-    border-bottom: 1pt solid var(--muted);
-    font-size: 9.5pt; line-height: 1.5;
-    position: relative;
+    padding: 8pt 0 8pt 26pt; border-bottom: 1pt solid var(--muted);
+    font-size: 9.5pt; line-height: 1.5; position: relative;
   }
   ul.feature li:last-child { border-bottom: none; }
   ul.feature li::before {
-    content: "✓";
-    position: absolute;
-    left: 0; top: 8pt;
-    width: 16pt; height: 16pt;
-    border-radius: 50%;
+    content: "✓"; position: absolute; left: 0; top: 8pt;
+    width: 16pt; height: 16pt; border-radius: 50%;
     background: var(--primary); color: var(--bg);
-    text-align: center;
-    font-size: 9pt; font-weight: 700;
-    line-height: 16pt;
+    text-align: center; font-size: 9pt; font-weight: 700; line-height: 16pt;
   }
-  body.vibe-warm ul.feature li::before { border-radius: 40% 60% 55% 45%; }
-  body.vibe-playful ul.feature li::before { background: var(--accent); }
 
-  /* Culture + Careers paired */
-  .pair {
-    display: flex;
-    gap: 18pt;
-    margin-bottom: 24pt;
-    page-break-inside: avoid;
-  }
-  .pair .card {
-    flex: 1; padding: 22pt;
-    border: 1.5pt solid var(--ink);
-    background: var(--bg);
-  }
-  body.vibe-minimal .pair .card { border: none; border-top: 1pt solid var(--muted); padding: 16pt 0; }
-  body.vibe-warm .pair .card { border-radius: 14pt; }
-
+  .pair { display: flex; gap: 18pt; margin-bottom: 24pt; page-break-inside: avoid; }
+  .pair .card { flex: 1; padding: 22pt; border: 1.5pt solid var(--ink); background: var(--bg); }
   .pair .card .icon {
-    width: 28pt; height: 28pt;
-    background: var(--primary);
-    margin-bottom: 12pt;
-    display: flex; align-items: center; justify-content: center;
+    width: 28pt; height: 28pt; background: var(--primary);
+    margin-bottom: 12pt; display: flex; align-items: center; justify-content: center;
   }
   .pair .card:nth-child(2) .icon { background: var(--accent); }
-  body.vibe-warm .pair .card .icon { border-radius: 50%; }
-  body.vibe-minimal .pair .card .icon { width: 22pt; height: 22pt; }
-
   .pair .card h3 {
     font-size: 13pt; margin: 0 0 8pt; font-weight: 700;
     letter-spacing: -0.2pt; color: var(--ink);
@@ -324,56 +172,216 @@
   body.font-serif .pair .card h3 { font-weight: 500; }
   .pair .card p { font-size: 9.5pt; line-height: 1.55; margin: 0; }
 
-  /* Final CTA */
   .cta {
-    background: var(--ink);
-    padding: 28pt 30pt;
-    color: var(--bg);
-    display: flex;
-    align-items: center;
-    gap: 22pt;
-    page-break-inside: avoid;
-    margin-top: 8pt;
+    background: var(--ink); padding: 28pt 30pt; color: var(--bg);
+    display: flex; align-items: center; gap: 22pt;
+    page-break-inside: avoid; margin-top: 8pt;
   }
-  body.vibe-minimal .cta { background: var(--bg); color: var(--ink); border: 1.5pt solid var(--ink); }
-  body.vibe-warm .cta { border-radius: 14pt; }
-
   .cta .cta-icon {
-    width: 46pt; height: 46pt;
-    background: var(--accent);
-    border-radius: 50%;
-    flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center;
+    width: 46pt; height: 46pt; background: var(--accent); border-radius: 50%;
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
   }
-  .cta .cta-text {
-    flex: 1;
-    font-size: 16pt; line-height: 1.3; font-weight: 500;
-  }
+  .cta .cta-text { flex: 1; font-size: 16pt; line-height: 1.3; font-weight: 500; }
   body.font-serif .cta .cta-text {
     font-family: 'Instrument Serif', Georgia, serif;
     font-style: italic; font-weight: 400; font-size: 18pt;
   }
   .cta .cta-cta {
     background: var(--accent); color: var(--ink);
-    padding: 10pt 16pt;
-    font-size: 8.5pt; letter-spacing: 2.5pt;
-    text-transform: uppercase; font-weight: 700;
-    white-space: nowrap;
+    padding: 10pt 16pt; font-size: 8.5pt; letter-spacing: 2.5pt;
+    text-transform: uppercase; font-weight: 700; white-space: nowrap;
+  }
+  .footer {
+    margin-top: 22pt; padding-top: 12pt; border-top: 1.5pt solid var(--ink);
+    font-size: 7.5pt; letter-spacing: 1.5pt; text-transform: uppercase;
+    color: var(--muted); display: flex; justify-content: space-between; font-weight: 600;
   }
 
-  .footer {
-    margin-top: 22pt;
-    padding-top: 12pt;
-    border-top: 1.5pt solid var(--ink);
-    font-size: 7.5pt; letter-spacing: 1.5pt;
-    text-transform: uppercase; color: var(--muted);
-    display: flex; justify-content: space-between; font-weight: 600;
+  /* ==================================================================
+     ==================== DRAMATIC VIBE OVERRIDES ===================== */
+
+  /* === MINIMAL: NO COVER, single page, mono, massive whitespace === */
+  body.vibe-minimal .cover { display: none; }
+  body.vibe-minimal .page { padding: 80pt 90pt; }
+  body.vibe-minimal .topbar {
+    border-bottom: 0.5pt solid var(--ink); padding-bottom: 18pt; margin-bottom: 60pt;
+  }
+  body.vibe-minimal .topbar .mark { font-size: 13pt; letter-spacing: -0.2pt; }
+  body.vibe-minimal .topbar .mark .dot {
+    width: 10pt; height: 10pt; background: var(--primary);
+  }
+  /* Big intro instead of cover */
+  body.vibe-minimal section:first-of-type h2 {
+    font-size: 42pt; line-height: 1; margin-bottom: 16pt; font-weight: 600;
+  }
+  body.vibe-minimal section:first-of-type .eyebrow { color: var(--muted); }
+  body.vibe-minimal .about-block {
+    background: transparent; border-left: none;
+    border-top: 0.5pt solid var(--muted); padding: 20pt 0 0;
+    font-size: 13pt; line-height: 1.65; font-style: normal;
+    font-family: 'Inter', -apple-system, sans-serif;
+  }
+  body.vibe-minimal.font-serif .about-block { font-family: 'Fraunces', Georgia, serif; }
+  body.vibe-minimal.font-mono .about-block { font-family: 'IBM Plex Mono', monospace; font-size: 11pt; }
+  body.vibe-minimal .grid { gap: 50pt; margin-bottom: 50pt; }
+  body.vibe-minimal .panel {
+    border: none; padding: 0; background: transparent;
+  }
+  body.vibe-minimal .panel.dark { background: transparent; color: var(--ink); }
+  body.vibe-minimal .panel.dark h3 { color: var(--ink); }
+  body.vibe-minimal .panel.dark ul.feature li { color: var(--ink); border-color: var(--muted); }
+  body.vibe-minimal .panel.dark ul.feature li::before {
+    background: transparent; color: var(--ink); border: 1pt solid var(--ink);
+  }
+  body.vibe-minimal h3 { font-size: 13pt; font-weight: 600; letter-spacing: 0; }
+  body.vibe-minimal .panel h3 { font-size: 13pt; margin-bottom: 18pt; }
+  body.vibe-minimal ul.feature li::before {
+    background: transparent; color: var(--ink); content: "—";
+    border-radius: 0; width: auto; font-size: 11pt; line-height: 16pt;
+  }
+  body.vibe-minimal .pair { gap: 50pt; }
+  body.vibe-minimal .pair .card {
+    border: none; border-top: 0.5pt solid var(--muted); padding: 18pt 0 0; background: transparent;
+  }
+  body.vibe-minimal .pair .card .icon { display: none; }
+  body.vibe-minimal .cta {
+    background: transparent; color: var(--ink);
+    border-top: 0.5pt solid var(--ink); border-bottom: 0.5pt solid var(--ink);
+    padding: 22pt 0; margin-top: 30pt;
+  }
+  body.vibe-minimal .cta .cta-icon { display: none; }
+  body.vibe-minimal .cta .cta-cta {
+    background: transparent; color: var(--ink); border: none;
+    border-bottom: 1pt solid var(--ink); padding: 2pt 0; letter-spacing: 1pt;
+  }
+  body.vibe-minimal .footer { display: none; }
+
+  /* === EDITORIAL: magazine, drop cap, big serif title === */
+  body.vibe-editorial .cover {
+    background: var(--bg); color: var(--ink);
+  }
+  body.vibe-editorial .cover .shape-a {
+    top: 60pt; right: 60pt; width: 90pt; height: 90pt;
+    background: var(--accent); border-radius: 50%;
+  }
+  body.vibe-editorial .cover .shape-b { display: none; }
+  body.vibe-editorial .cover-eyebrow { color: var(--muted); border-color: var(--muted); }
+  body.vibe-editorial .cover-title {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-style: italic; font-weight: 400;
+    font-size: 96pt; letter-spacing: -2.5pt; color: var(--primary);
+    line-height: 0.95;
+  }
+  body.vibe-editorial .cover-tag {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-style: italic; color: var(--ink); opacity: 0.85;
+    font-size: 18pt; max-width: 380pt;
+  }
+  body.vibe-editorial .cover-foot { color: var(--muted); }
+  body.vibe-editorial .cover-foot .badge { background: var(--ink); color: var(--bg); }
+  body.vibe-editorial .about-block {
+    background: transparent; border-left: none;
+    border-top: 3pt solid var(--accent); padding: 20pt 0 0;
+    column-count: 2; column-gap: 30pt; font-size: 11pt; font-style: normal;
+    font-family: 'Inter', sans-serif;
+  }
+  body.vibe-editorial.font-serif .about-block { font-family: 'Fraunces', Georgia, serif; }
+  body.vibe-editorial .about-block::first-letter {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 64pt; font-weight: 400; float: left;
+    margin: 0 8pt -6pt 0; line-height: 0.85; color: var(--primary);
+  }
+  body.vibe-editorial ul.feature {
+    counter-reset: feat;
+  }
+  body.vibe-editorial ul.feature li {
+    counter-increment: feat;
+    padding-left: 32pt;
+  }
+  body.vibe-editorial ul.feature li::before {
+    content: counter(feat, decimal-leading-zero);
+    background: transparent; color: var(--accent);
+    font-family: 'Instrument Serif', Georgia, serif; font-style: italic;
+    font-size: 14pt; width: auto; border-radius: 0;
+  }
+
+  /* === PLAYFUL: full-bleed colorful cover + bold colored blocks === */
+  body.vibe-playful .cover .shape-a {
+    top: -180pt; right: -180pt; width: 500pt; height: 500pt;
+    background: var(--accent);
+  }
+  body.vibe-playful .cover .shape-b {
+    display: block;
+    bottom: 80pt; right: 75pt; width: 120pt; height: 120pt;
+    border-radius: 50%; border: none; background: var(--bg);
+  }
+  body.vibe-playful .cover .shape-c {
+    display: block;
+    bottom: -130pt; left: -130pt; width: 360pt; height: 360pt;
+    border-radius: 50%; border: 16pt solid var(--accent);
+  }
+  body.vibe-playful .cover-title { font-weight: 800; }
+  body.vibe-playful .about-block {
+    background: var(--ink); color: var(--bg);
+    border-left: none; padding: 28pt 32pt; font-size: 13pt;
+  }
+  body.vibe-playful .panel {
+    background: var(--accent); border-color: var(--accent);
+    color: var(--ink);
+  }
+  body.vibe-playful .panel .eyebrow { color: var(--ink); }
+  body.vibe-playful .panel.dark { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  body.vibe-playful .panel.dark .eyebrow { color: var(--accent); }
+  body.vibe-playful .pair .card {
+    background: var(--primary-soft); border: none;
+  }
+  body.vibe-playful .pair .card:nth-child(2) {
+    background: var(--accent-soft);
+  }
+
+  /* === CORPORATE: diagonal cover, tight grid === */
+  body.vibe-corporate .cover {
+    background: linear-gradient(135deg,
+      var(--primary) 0%, var(--primary) 58%,
+      var(--accent) 58%, var(--accent) 100%);
+  }
+  body.vibe-corporate .cover .shape-a { display: none; }
+  body.vibe-corporate .cover .shape-b { display: none; }
+  body.vibe-corporate .cover-title { font-weight: 600; letter-spacing: -1pt; }
+  body.vibe-corporate .about-block {
+    background: var(--primary-soft);
+    border-left: 4pt solid var(--primary);
+  }
+  body.vibe-corporate .panel { border-width: 1pt; }
+  body.vibe-corporate ul.feature li::before {
+    background: var(--primary); border-radius: 2pt;
+  }
+
+  /* === WARM: organic blob shapes, rounded everywhere === */
+  body.vibe-warm .cover .shape-a {
+    border-radius: 62% 38% 65% 35% / 55% 60% 40% 45%;
+    width: 380pt; height: 320pt; top: -80pt; right: -60pt;
+  }
+  body.vibe-warm .cover .shape-b {
+    display: block;
+    bottom: -80pt; left: -50pt; width: 280pt; height: 280pt;
+    border-radius: 52% 48% 55% 45% / 60% 50% 50% 40%;
+    background: var(--accent); border: none; opacity: 0.45;
+  }
+  body.vibe-warm .topbar .mark .dot { border-radius: 45% 55% 50% 50%; }
+  body.vibe-warm .about-block { border-radius: 16pt; }
+  body.vibe-warm .panel { border-radius: 16pt; border-width: 1pt; }
+  body.vibe-warm .pair .card { border-radius: 16pt; }
+  body.vibe-warm .pair .card .icon { border-radius: 50%; }
+  body.vibe-warm .cta { border-radius: 16pt; }
+  body.vibe-warm ul.feature li::before {
+    border-radius: 55% 45% 50% 50%;
   }
 </style>
 </head>
 <body class="vibe-{{ vibe | default('corporate') }} font-{{ display_font | default('sans') }}">
 
-<!-- ============================== COVER -->
+<!-- COVER -->
 <div class="cover">
   <div class="shape-a"></div>
   <div class="shape-b"></div>
@@ -389,7 +397,7 @@
   </div>
 </div>
 
-<!-- ============================== CONTENT -->
+<!-- CONTENT -->
 <div class="page">
 
   <div class="topbar">
