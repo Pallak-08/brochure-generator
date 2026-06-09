@@ -6,10 +6,6 @@
 
 The brochure isn't picked from a template gallery. The system scrapes the target site's CSS for real hex codes, asks Gemini to pick a vibe and assign colors to roles (background / primary / accent / text), and renders a PDF with those choices baked in. Same one-paragraph prompt, totally different output per brand.
 
-| Anthropic | Stripe | Linear |
-| --- | --- | --- |
-| cream + warm orange + serif | indigo + white + clean sans | dark mode + violet + monospace |
-
 Built in ~24 hours as a portfolio project. Costs $0 to run (all free tiers).
 
 ---
