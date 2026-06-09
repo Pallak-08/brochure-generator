@@ -17,7 +17,7 @@ from pydantic import BaseModel, HttpUrl
 from app.llm import generate_brochure_with_design
 from app.pdf import render_pdf
 from app import storage
-from app.presets import DESIGN_PRESETS, get_preset
+from app.presets import DESIGN_PRESETS, get_preset, get_preset_template
 
 load_dotenv()
 
@@ -98,10 +98,13 @@ def generate(req: GenerateRequest):
 
     # If the user picked a specific preset, override the AI-chosen design.
     # The brochure copy (text) is always AI-written; only the look is swapped.
+    # We also record the preset key on the design so the editor knows which
+    # template to use when re-rendering edits.
     if req.preset:
         preset_design = get_preset(req.preset)
         if preset_design:
             design = preset_design
+            design["_preset_key"] = req.preset
 
     run_id = uuid.uuid4().hex[:12]
     run_dir = RUNS_DIR / run_id
@@ -116,9 +119,12 @@ def generate(req: GenerateRequest):
         }, indent=2)
     )
 
+    # Pick the right template — preset-specific layout, or the adaptive default
+    template_name = get_preset_template(req.preset) if req.preset else None
+
     pdf_path = run_dir / "brochure.pdf"
     try:
-        render_pdf(brochure, design, source_url=url, output_path=pdf_path)
+        render_pdf(brochure, design, source_url=url, output_path=pdf_path, template_name=template_name)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF render failed: {e}")
 
@@ -148,9 +154,13 @@ def rerender(run_id: str, req: RerenderRequest):
     Client passes the full current state so the backend stays stateless."""
     run_dir = RUNS_DIR / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
+    # Re-rendering edits: preserve the original preset template if there was one
+    preset_key = req.design.get("_preset_key") if isinstance(req.design, dict) else None
+    template_name = get_preset_template(preset_key) if preset_key else None
+
     pdf_path = run_dir / "brochure.pdf"
     try:
-        render_pdf(req.brochure, req.design, source_url=req.url, output_path=pdf_path)
+        render_pdf(req.brochure, req.design, source_url=req.url, output_path=pdf_path, template_name=template_name)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"PDF render failed: {e}")
 

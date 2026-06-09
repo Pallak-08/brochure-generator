@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>{{ company_name }} — Brochure</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Instrument+Serif&display=swap');
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  :root { --bg: {{ background }}; --primary: {{ primary }}; --accent: {{ accent }}; --ink: {{ ink }}; --muted: {{ muted }}; }
+  body { margin: 0; color: var(--ink); background: var(--bg); font-family: 'Space Grotesk', sans-serif; font-size: 10.5pt; line-height: 1.5; }
+
+  /* COVER — vibrant primary with 3 geometric shapes */
+  .cover {
+    height: 297mm; background: var(--primary); color: var(--bg);
+    padding: 50pt; position: relative; overflow: hidden;
+    page-break-after: always;
+    display: flex; flex-direction: column;
+  }
+  .blob {
+    position: absolute; top: -180pt; right: -180pt;
+    width: 540pt; height: 540pt; border-radius: 50%;
+    background: var(--accent);
+  }
+  .dot {
+    position: absolute; bottom: 90pt; right: 80pt;
+    width: 130pt; height: 130pt; border-radius: 50%;
+    background: var(--bg);
+  }
+  .ring {
+    position: absolute; bottom: -150pt; left: -150pt;
+    width: 400pt; height: 400pt; border-radius: 50%;
+    border: 18pt solid var(--accent);
+  }
+  .label {
+    display: inline-block; border: 1.5pt solid var(--bg);
+    padding: 7pt 14pt; font-size: 9pt; letter-spacing: 4pt;
+    text-transform: uppercase; font-weight: 700; align-self: flex-start; z-index: 2;
+  }
+  h1.title {
+    font-family: 'Instrument Serif', serif; font-style: italic; font-weight: 400;
+    font-size: 100pt; line-height: 0.95; letter-spacing: -3pt;
+    margin: auto 0 0; z-index: 2; max-width: 460pt;
+  }
+  .tag {
+    font-size: 18pt; line-height: 1.4; font-weight: 400;
+    margin: 22pt 0 0; max-width: 440pt; z-index: 2;
+  }
+  .foot {
+    margin-top: 32pt; display: flex; justify-content: space-between;
+    align-items: flex-end; font-size: 9pt; letter-spacing: 3pt; text-transform: uppercase;
+    font-weight: 700; z-index: 2;
+  }
+  .foot .badge { background: var(--bg); color: var(--primary); padding: 9pt 14pt; }
+
+  /* CONTENT — alternating big colored sections */
+  .page { background: var(--bg); }
+
+  .nav {
+    padding: 22pt 44pt; background: var(--ink); color: var(--bg);
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10pt; font-weight: 600; letter-spacing: 0.3pt;
+  }
+  .nav .markdot { display: inline-block; width: 14pt; height: 14pt; background: var(--accent); border-radius: 50%; margin-right: 9pt; vertical-align: middle; }
+
+  /* ABOUT — large block treatment */
+  .about {
+    padding: 50pt 44pt; background: var(--ink); color: var(--bg);
+    position: relative; overflow: hidden;
+  }
+  .about .splash {
+    position: absolute; top: -80pt; right: -80pt;
+    width: 240pt; height: 240pt; border-radius: 50%;
+    background: var(--accent); opacity: 0.9;
+  }
+  .about .eye {
+    font-size: 9pt; letter-spacing: 3.5pt; text-transform: uppercase;
+    color: var(--accent); font-weight: 700; margin-bottom: 10pt; position: relative; z-index: 2;
+  }
+  .about h2 {
+    font-size: 38pt; font-weight: 700; letter-spacing: -1pt;
+    margin: 0 0 16pt; line-height: 0.95; position: relative; z-index: 2;
+  }
+  .about .body {
+    font-size: 13pt; line-height: 1.55; max-width: 80%; position: relative; z-index: 2;
+  }
+
+  /* WHAT WE DO / WHY US — 2-col with big numbered bullets */
+  .grid { display: flex; padding: 44pt; gap: 30pt; page-break-inside: avoid; }
+  .grid .col { flex: 1; }
+  .grid .eye { font-size: 8.5pt; letter-spacing: 3pt; text-transform: uppercase; color: var(--primary); font-weight: 700; margin-bottom: 6pt; }
+  .grid h3 { font-size: 24pt; font-weight: 700; margin: 0 0 18pt; letter-spacing: -0.6pt; }
+  ol.big-list { list-style: none; padding: 0; margin: 0; counter-reset: bn; }
+  ol.big-list li {
+    counter-increment: bn;
+    padding: 14pt 0 14pt 50pt;
+    font-size: 11pt; line-height: 1.5;
+    position: relative; border-bottom: 1pt solid var(--muted);
+  }
+  ol.big-list li:last-child { border-bottom: none; }
+  ol.big-list li::before {
+    content: counter(bn, decimal-leading-zero);
+    position: absolute; left: 0; top: 12pt;
+    width: 36pt; height: 36pt; border-radius: 50%;
+    background: var(--accent); color: var(--ink);
+    text-align: center; line-height: 36pt;
+    font-weight: 700; font-size: 13pt;
+  }
+
+  /* CULTURE + CAREERS — colored cards */
+  .pair { display: flex; padding: 0 44pt; gap: 20pt; page-break-inside: avoid; }
+  .pair .card {
+    flex: 1; padding: 28pt; border-radius: 20pt;
+    background: var(--accent); color: var(--ink);
+  }
+  .pair .card:nth-child(2) { background: var(--primary); color: var(--bg); }
+  .pair .eye { font-size: 8.5pt; letter-spacing: 3pt; text-transform: uppercase; font-weight: 700; margin-bottom: 8pt; opacity: 0.8; }
+  .pair h4 { font-size: 22pt; margin: 0 0 10pt; font-weight: 700; letter-spacing: -0.4pt; }
+  .pair p { font-size: 10pt; line-height: 1.55; margin: 0; }
+
+  /* CTA */
+  .cta {
+    margin: 44pt; padding: 36pt 38pt;
+    background: var(--accent); color: var(--ink);
+    border-radius: 24pt;
+    display: flex; align-items: center; gap: 28pt;
+  }
+  .cta .ico {
+    width: 60pt; height: 60pt; border-radius: 50%;
+    background: var(--ink); color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28pt; font-weight: 700; flex-shrink: 0;
+  }
+  .cta .txt {
+    flex: 1; font-family: 'Instrument Serif', serif; font-style: italic;
+    font-size: 22pt; line-height: 1.25;
+  }
+  .cta .pill { background: var(--ink); color: var(--accent); padding: 12pt 22pt; font-size: 9pt; letter-spacing: 3pt; text-transform: uppercase; font-weight: 700; white-space: nowrap; }
+</style></head>
+<body>
+
+<div class="cover">
+  <div class="blob"></div>
+  <div class="ring"></div>
+  <div class="dot"></div>
+  <div class="label">Brochure · 2026</div>
+  <h1 class="title">{{ company_name }}</h1>
+  <p class="tag">{{ tagline }}</p>
+  <div class="foot">
+    <span>{{ source_url }}</span>
+    <span class="badge">01 / 02</span>
+  </div>
+</div>
+
+<div class="page">
+  <div class="nav">
+    <div><span class="markdot"></span>{{ company_name }}</div>
+    <div style="font-size: 8pt; letter-spacing: 2pt; text-transform: uppercase; opacity: 0.7;">{{ source_url }}</div>
+  </div>
+
+  <div class="about">
+    <div class="splash"></div>
+    <div class="eye">Who We Are</div>
+    <h2>About</h2>
+    <div class="body">{{ about }}</div>
+  </div>
+
+  <div class="grid">
+    <div class="col">
+      <div class="eye">Our Work</div>
+      <h3>What We Do</h3>
+      <ol class="big-list">{% for item in what_we_do %}<li>{{ item }}</li>{% endfor %}</ol>
+    </div>
+    <div class="col">
+      <div class="eye">Why Choose Us</div>
+      <h3>Why Us</h3>
+      <ol class="big-list">{% for item in why_us %}<li>{{ item }}</li>{% endfor %}</ol>
+    </div>
+  </div>
+
+  <div class="pair">
+    <div class="card">
+      <div class="eye">Culture</div>
+      <h4>How we work</h4>
+      <p>{{ culture }}</p>
+    </div>
+    <div class="card">
+      <div class="eye">Careers</div>
+      <h4>Join us</h4>
+      <p>{{ careers }}</p>
+    </div>
+  </div>
+
+  <div class="cta">
+    <div class="ico">→</div>
+    <div class="txt">{{ call_to_action }}</div>
+    <div class="pill">Get Started</div>
+  </div>
+</div>
+
+</body></html>

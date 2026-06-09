@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>{{ company_name }} — Brochure</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap');
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  :root { --bg: {{ background }}; --primary: {{ primary }}; --accent: {{ accent }}; --ink: {{ ink }}; --muted: {{ muted }}; }
+  body {
+    margin: 0; color: var(--ink); background: var(--bg);
+    font-family: 'IBM Plex Mono', 'SF Mono', monospace;
+    font-size: 10pt; line-height: 1.65;
+  }
+
+  /* NO COVER — single page document */
+  .page {
+    padding: 70pt 80pt;
+    min-height: 297mm;
+    background: var(--bg);
+  }
+
+  /* Top: minimal header with mono mark */
+  .top {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding-bottom: 16pt;
+    border-bottom: 0.5pt solid var(--ink);
+    margin-bottom: 50pt;
+    font-size: 9pt; letter-spacing: 1.5pt; text-transform: uppercase;
+  }
+  .top .mark { font-weight: 600; color: var(--ink); }
+  .top .mark::before {
+    content: ""; display: inline-block;
+    width: 10pt; height: 10pt; background: var(--primary);
+    margin-right: 8pt; vertical-align: middle;
+  }
+  .top .meta { color: var(--muted); }
+
+  /* HERO line — clean, no display */
+  .hero {
+    margin-bottom: 50pt;
+  }
+  .hero .lab { font-size: 8.5pt; letter-spacing: 2.5pt; text-transform: uppercase; color: var(--muted); margin-bottom: 12pt; font-weight: 600; }
+  .hero h1 {
+    font-family: 'Inter', sans-serif;
+    font-size: 46pt; line-height: 1.0; font-weight: 500; letter-spacing: -1.2pt;
+    margin: 0 0 16pt; color: var(--ink);
+  }
+  .hero .tagline {
+    font-family: 'Inter', sans-serif;
+    font-size: 15pt; line-height: 1.45; color: var(--muted);
+    max-width: 80%; margin: 0;
+  }
+
+  /* SECTION — labeled hairline divider */
+  section { margin-bottom: 40pt; page-break-inside: avoid; }
+  section .head {
+    display: flex; align-items: baseline; gap: 14pt;
+    border-top: 0.5pt solid var(--ink);
+    padding-top: 14pt; margin-bottom: 16pt;
+  }
+  section .head .num {
+    font-size: 9pt; color: var(--accent); font-weight: 600;
+    letter-spacing: 1.5pt;
+  }
+  section .head h2 {
+    font-family: 'Inter', sans-serif;
+    font-size: 12pt; font-weight: 600; letter-spacing: 0;
+    margin: 0; color: var(--ink); flex: 1;
+  }
+  section .head .lab { font-size: 8.5pt; color: var(--muted); letter-spacing: 1.5pt; text-transform: uppercase; }
+
+  section p { font-family: 'Inter', sans-serif; font-size: 11pt; line-height: 1.65; margin: 0; max-width: 90%; }
+
+  /* Lists — dashes only */
+  ul.dash { list-style: none; padding: 0; margin: 0; }
+  ul.dash li {
+    font-family: 'Inter', sans-serif;
+    padding: 8pt 0 8pt 18pt; font-size: 10.5pt; line-height: 1.55;
+    position: relative;
+  }
+  ul.dash li::before {
+    content: "—"; position: absolute; left: 0; color: var(--accent); font-weight: 500;
+  }
+
+  /* Two columns side by side */
+  .two-col { display: flex; gap: 50pt; }
+  .two-col .col { flex: 1; }
+
+  /* CTA — single line, no bg */
+  .cta {
+    margin-top: 30pt;
+    padding: 24pt 0;
+    border-top: 0.5pt solid var(--ink); border-bottom: 0.5pt solid var(--ink);
+    display: flex; align-items: center; gap: 18pt;
+  }
+  .cta .arrow { color: var(--accent); font-size: 16pt; }
+  .cta .txt {
+    flex: 1; font-family: 'Inter', sans-serif;
+    font-size: 13pt; line-height: 1.4; font-weight: 500;
+    color: var(--ink);
+  }
+  .cta .go {
+    color: var(--ink); font-size: 9pt; letter-spacing: 2pt;
+    text-transform: uppercase; font-weight: 600;
+    border-bottom: 1pt solid var(--ink); padding-bottom: 1pt;
+  }
+</style></head>
+<body>
+
+<div class="page">
+  <div class="top">
+    <div class="mark">{{ company_name }}</div>
+    <div class="meta">{{ source_url }} · 2026 / 01</div>
+  </div>
+
+  <div class="hero">
+    <div class="lab">// Brochure</div>
+    <h1>{{ company_name }}</h1>
+    <p class="tagline">{{ tagline }}</p>
+  </div>
+
+  <section>
+    <div class="head">
+      <span class="num">001</span>
+      <h2>About</h2>
+      <span class="lab">overview</span>
+    </div>
+    <p>{{ about }}</p>
+  </section>
+
+  <div class="two-col">
+    <section style="flex: 1;">
+      <div class="head">
+        <span class="num">002</span>
+        <h2>What we do</h2>
+      </div>
+      <ul class="dash">{% for item in what_we_do %}<li>{{ item }}</li>{% endfor %}</ul>
+    </section>
+
+    <section style="flex: 1;">
+      <div class="head">
+        <span class="num">003</span>
+        <h2>Why us</h2>
+      </div>
+      <ul class="dash">{% for item in why_us %}<li>{{ item }}</li>{% endfor %}</ul>
+    </section>
+  </div>
+
+  <div class="two-col">
+    <section style="flex: 1;">
+      <div class="head">
+        <span class="num">004</span>
+        <h2>Culture</h2>
+      </div>
+      <p>{{ culture }}</p>
+    </section>
+    <section style="flex: 1;">
+      <div class="head">
+        <span class="num">005</span>
+        <h2>Careers</h2>
+      </div>
+      <p>{{ careers }}</p>
+    </section>
+  </div>
+
+  <div class="cta">
+    <span class="arrow">→</span>
+    <span class="txt">{{ call_to_action }}</span>
+    <span class="go">Begin</span>
+  </div>
+</div>
+
+</body></html>

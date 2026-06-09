@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>{{ company_name }} — Brochure</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@300;400;500;600&family=Instrument+Serif&display=swap');
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  :root {
+    --bg: {{ background }};
+    --primary: {{ primary }};
+    --accent: {{ accent }};
+    --ink: {{ ink }};
+    --muted: {{ muted }};
+  }
+  body { margin: 0; color: var(--ink); background: var(--bg); font-family: 'Inter', sans-serif; font-size: 10.5pt; line-height: 1.6; }
+
+  /* ============ COVER — Magazine: centered serif italic giant title, ornaments ============ */
+  .cover {
+    height: 297mm; padding: 80pt 60pt;
+    background: var(--bg);
+    color: var(--ink);
+    display: flex; flex-direction: column;
+    position: relative;
+    page-break-after: always;
+  }
+  .cover .top { display: flex; justify-content: space-between; align-items: center; font-size: 8.5pt; letter-spacing: 4pt; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+  .cover .top::before, .cover .top::after { content: ""; flex: 1; height: 0.5pt; background: var(--muted); }
+  .cover .top::before { margin-right: 16pt; }
+  .cover .top::after { margin-left: 16pt; }
+  .cover .top .label { padding: 0 12pt; }
+
+  .cover h1 {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-style: italic; font-weight: 400;
+    font-size: 130pt; line-height: 0.95; letter-spacing: -3pt;
+    margin: auto 0; text-align: center;
+    color: var(--primary);
+  }
+  .cover .tag {
+    font-family: 'Fraunces', Georgia, serif;
+    font-style: italic; font-size: 16pt; line-height: 1.4;
+    text-align: center; margin: 0 auto; max-width: 380pt;
+    color: var(--ink); opacity: 0.85;
+  }
+  .cover .issue {
+    margin-top: auto; padding-top: 40pt;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 9pt; letter-spacing: 2.5pt; text-transform: uppercase; color: var(--muted); font-weight: 500;
+  }
+  .cover .issue .ornament {
+    font-family: 'Instrument Serif', Georgia, serif; font-size: 22pt; color: var(--accent);
+  }
+
+  /* ============ CONTENT — 2-column magazine body ============ */
+  .page { padding: 50pt 60pt 70pt; background: var(--bg); }
+
+  .running-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 8pt; letter-spacing: 3pt; text-transform: uppercase;
+    color: var(--muted); font-weight: 500;
+    padding-bottom: 8pt; border-bottom: 0.5pt solid var(--muted);
+    margin-bottom: 40pt;
+  }
+  .running-head .num { font-family: 'Instrument Serif', serif; font-style: italic; font-size: 14pt; letter-spacing: 0; color: var(--primary); }
+
+  /* ABOUT — drop cap, 2-col */
+  .feature {
+    column-count: 2; column-gap: 26pt;
+    font-family: 'Fraunces', Georgia, serif; font-size: 11.5pt; line-height: 1.55;
+    margin-bottom: 28pt; page-break-inside: avoid;
+  }
+  .feature::first-letter {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-size: 84pt; font-weight: 400; line-height: 0.82;
+    float: left; margin: 4pt 10pt -4pt 0;
+    color: var(--accent);
+  }
+
+  /* DIVIDER */
+  .ornament-div {
+    text-align: center;
+    font-family: 'Instrument Serif', serif;
+    font-size: 18pt; color: var(--accent);
+    margin: 18pt 0 22pt; letter-spacing: 6pt;
+  }
+
+  /* TWO LISTS as magazine columns */
+  .lists { display: flex; gap: 32pt; margin-bottom: 28pt; page-break-inside: avoid; }
+  .lists .col { flex: 1; }
+  .lists h3 {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: 16pt; font-weight: 500; margin: 0 0 10pt;
+    color: var(--primary); letter-spacing: -0.2pt;
+  }
+  .lists .lab { font-size: 7.5pt; letter-spacing: 3pt; text-transform: uppercase; color: var(--muted); margin-bottom: 4pt; font-weight: 600; }
+  ol.serif-list { list-style: none; padding: 0; margin: 0; counter-reset: it; }
+  ol.serif-list li {
+    counter-increment: it;
+    padding: 8pt 0 8pt 36pt; border-bottom: 0.5pt solid var(--muted);
+    font-family: 'Fraunces', serif; font-size: 10.5pt; line-height: 1.5;
+    position: relative;
+  }
+  ol.serif-list li:last-child { border-bottom: none; }
+  ol.serif-list li::before {
+    content: counter(it, decimal-leading-zero);
+    position: absolute; left: 0; top: 9pt;
+    font-family: 'Instrument Serif', serif; font-style: italic;
+    color: var(--accent); font-size: 13pt;
+  }
+
+  /* CULTURE + CAREERS — paired with serif h3 + sans body */
+  .pair { display: flex; gap: 30pt; margin: 22pt 0; page-break-inside: avoid; }
+  .pair .item { flex: 1; }
+  .pair .item h4 {
+    font-family: 'Fraunces', serif; font-style: italic; font-weight: 500;
+    font-size: 15pt; margin: 0 0 6pt; color: var(--primary); letter-spacing: -0.2pt;
+  }
+  .pair .item p { font-size: 10pt; line-height: 1.6; margin: 0; }
+
+  /* PULL QUOTE CTA */
+  .cta {
+    margin: 28pt 0 12pt; padding: 22pt 0;
+    border-top: 1pt solid var(--ink); border-bottom: 1pt solid var(--ink);
+    text-align: center;
+    font-family: 'Instrument Serif', serif; font-style: italic;
+    font-size: 22pt; line-height: 1.3;
+    color: var(--ink);
+  }
+  .cta::before, .cta::after {
+    content: "—"; color: var(--accent);
+    margin: 0 14pt; font-style: normal;
+  }
+  .footer {
+    margin-top: 18pt; display: flex; justify-content: space-between;
+    font-size: 7.5pt; letter-spacing: 2pt; text-transform: uppercase;
+    color: var(--muted); font-weight: 600;
+  }
+</style></head>
+<body>
+
+<div class="cover">
+  <div class="top"><span class="label">{{ source_url }}</span></div>
+  <h1>{{ company_name }}</h1>
+  <p class="tag">{{ tagline }}</p>
+  <div class="issue">
+    <span>Issue 01</span>
+    <span class="ornament">⁂</span>
+    <span>2026</span>
+  </div>
+</div>
+
+<div class="page">
+  <div class="running-head">
+    <span>{{ company_name }}</span>
+    <span class="num">i</span>
+    <span>The Brochure</span>
+  </div>
+
+  <p class="feature">{{ about }}</p>
+
+  <div class="ornament-div">· · ·</div>
+
+  <div class="lists">
+    <div class="col">
+      <div class="lab">Section i</div>
+      <h3>What We Do</h3>
+      <ol class="serif-list">
+        {% for item in what_we_do %}<li>{{ item }}</li>{% endfor %}
+      </ol>
+    </div>
+    <div class="col">
+      <div class="lab">Section ii</div>
+      <h3>Why Us</h3>
+      <ol class="serif-list">
+        {% for item in why_us %}<li>{{ item }}</li>{% endfor %}
+      </ol>
+    </div>
+  </div>
+
+  <div class="ornament-div">⁂</div>
+
+  <div class="pair">
+    <div class="item">
+      <h4>On Culture</h4>
+      <p>{{ culture }}</p>
+    </div>
+    <div class="item">
+      <h4>On Careers</h4>
+      <p>{{ careers }}</p>
+    </div>
+  </div>
+
+  <div class="cta">{{ call_to_action }}</div>
+
+  <div class="footer">
+    <span>{{ company_name }}</span>
+    <span>{{ source_url }}</span>
+  </div>
+</div>
+
+</body></html>

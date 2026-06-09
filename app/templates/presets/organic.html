@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>{{ company_name }} — Brochure</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,400;9..144,600,100&family=Instrument+Serif&family=Inter:wght@300;400;500&display=swap');
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  :root { --bg: {{ background }}; --primary: {{ primary }}; --accent: {{ accent }}; --ink: {{ ink }}; --muted: {{ muted }}; }
+  body { margin: 0; color: var(--ink); background: var(--bg); font-family: 'Inter', sans-serif; font-size: 10.5pt; line-height: 1.6; }
+
+  /* COVER — organic blob shapes, cream paper */
+  .cover {
+    height: 297mm; background: var(--bg);
+    padding: 60pt; position: relative; overflow: hidden;
+    page-break-after: always;
+    display: flex; flex-direction: column;
+  }
+  .blob-a {
+    position: absolute; top: -100pt; right: -100pt;
+    width: 420pt; height: 360pt;
+    border-radius: 62% 38% 65% 35% / 55% 60% 40% 45%;
+    background: var(--accent); opacity: 0.85;
+  }
+  .blob-b {
+    position: absolute; bottom: -120pt; left: -80pt;
+    width: 340pt; height: 340pt;
+    border-radius: 52% 48% 55% 45% / 60% 50% 50% 40%;
+    background: var(--primary); opacity: 0.18;
+  }
+  .blob-c {
+    position: absolute; top: 220pt; left: -50pt;
+    width: 140pt; height: 140pt;
+    border-radius: 60% 40% 50% 50%;
+    background: var(--accent); opacity: 0.35;
+  }
+  .stamp {
+    z-index: 2; display: inline-block;
+    background: var(--primary); color: var(--bg);
+    padding: 9pt 16pt;
+    border-radius: 30pt;
+    font-size: 8.5pt; letter-spacing: 3pt; text-transform: uppercase;
+    font-weight: 600; align-self: flex-start;
+  }
+  h1.title {
+    z-index: 2; margin: auto 0 0;
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-style: italic; font-weight: 400;
+    font-size: 96pt; line-height: 0.95; letter-spacing: -2.5pt;
+    color: var(--primary); max-width: 440pt;
+  }
+  .tag {
+    z-index: 2; margin: 24pt 0 0;
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: 18pt; line-height: 1.4;
+    color: var(--ink); max-width: 420pt;
+  }
+  .signature {
+    z-index: 2; margin-top: 30pt;
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: 11pt; color: var(--ink); opacity: 0.65;
+  }
+
+  /* CONTENT — soft, rounded everything */
+  .page { padding: 50pt 56pt; background: var(--bg); }
+
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-bottom: 16pt;
+    margin-bottom: 36pt;
+    border-bottom: 1pt dashed var(--muted);
+  }
+  .topbar .mark { font-weight: 600; font-size: 11pt; }
+  .topbar .mark::before {
+    content: ""; display: inline-block;
+    width: 14pt; height: 14pt;
+    border-radius: 50% 40% 55% 45%;
+    background: var(--primary); margin-right: 10pt; vertical-align: middle;
+  }
+  .topbar .meta { font-family: 'Fraunces', serif; font-style: italic; font-size: 9.5pt; color: var(--muted); }
+
+  /* ABOUT — soft tinted card with rounded corners */
+  .about {
+    padding: 30pt; border-radius: 24pt;
+    background: var(--accent); color: var(--ink);
+    margin-bottom: 28pt; position: relative;
+  }
+  .about .lab {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: 11pt; opacity: 0.7; margin-bottom: 6pt;
+  }
+  .about h2 {
+    font-family: 'Instrument Serif', serif; font-style: italic; font-weight: 400;
+    font-size: 32pt; margin: 0 0 12pt; line-height: 1; letter-spacing: -0.8pt;
+  }
+  .about p {
+    font-family: 'Fraunces', serif; font-size: 13pt; line-height: 1.55; margin: 0;
+  }
+
+  /* LISTS — soft rounded cards */
+  .grid { display: flex; gap: 16pt; margin-bottom: 24pt; page-break-inside: avoid; }
+  .grid .col { flex: 1; padding: 24pt; border-radius: 22pt; border: 1.5pt solid var(--ink); background: var(--bg); }
+  .grid .col h3 {
+    font-family: 'Instrument Serif', serif; font-style: italic; font-weight: 400;
+    font-size: 20pt; margin: 0 0 12pt; color: var(--primary); letter-spacing: -0.3pt;
+  }
+  .grid .col .lab {
+    font-family: 'Fraunces', serif; font-style: italic;
+    font-size: 10pt; color: var(--muted); margin-bottom: 2pt;
+  }
+  ul.petal { list-style: none; padding: 0; margin: 0; }
+  ul.petal li {
+    padding: 7pt 0 7pt 24pt; position: relative;
+    font-size: 10pt; line-height: 1.55;
+    border-bottom: 1pt dashed var(--muted);
+  }
+  ul.petal li:last-child { border-bottom: none; }
+  ul.petal li::before {
+    content: ""; position: absolute;
+    left: 0; top: 11pt;
+    width: 12pt; height: 12pt;
+    border-radius: 60% 40% 55% 45%;
+    background: var(--accent);
+  }
+
+  /* CULTURE + CAREERS — paired soft cards */
+  .pair { display: flex; gap: 16pt; margin-bottom: 26pt; page-break-inside: avoid; }
+  .pair .card { flex: 1; padding: 22pt; border-radius: 20pt; background: var(--primary); color: var(--bg); }
+  .pair .card:nth-child(2) { background: var(--ink); color: var(--bg); }
+  .pair .card .lab { font-family: 'Fraunces', serif; font-style: italic; font-size: 11pt; opacity: 0.8; margin-bottom: 6pt; }
+  .pair .card h4 { font-family: 'Instrument Serif', serif; font-style: italic; font-weight: 400; font-size: 18pt; margin: 0 0 8pt; line-height: 1.1; }
+  .pair .card p { font-size: 10pt; line-height: 1.55; margin: 0; }
+
+  /* CTA — soft rounded pill bar */
+  .cta {
+    padding: 26pt 30pt;
+    border-radius: 30pt; background: var(--primary); color: var(--bg);
+    display: flex; align-items: center; gap: 22pt;
+  }
+  .cta .leaf {
+    width: 44pt; height: 44pt; flex-shrink: 0;
+    border-radius: 50% 30% 60% 40%;
+    background: var(--accent);
+  }
+  .cta .txt {
+    flex: 1; font-family: 'Instrument Serif', serif; font-style: italic;
+    font-size: 19pt; line-height: 1.3;
+  }
+  .cta .go {
+    background: var(--bg); color: var(--primary);
+    padding: 10pt 18pt; border-radius: 24pt;
+    font-size: 9pt; letter-spacing: 2.5pt; text-transform: uppercase;
+    font-weight: 700; white-space: nowrap;
+  }
+</style></head>
+<body>
+
+<div class="cover">
+  <div class="blob-a"></div>
+  <div class="blob-b"></div>
+  <div class="blob-c"></div>
+  <span class="stamp">Brochure · 2026</span>
+  <h1 class="title">{{ company_name }}</h1>
+  <p class="tag">{{ tagline }}</p>
+  <div class="signature">
+    <span>{{ source_url }}</span>
+    <span>~</span>
+  </div>
+</div>
+
+<div class="page">
+  <div class="topbar">
+    <div class="mark">{{ company_name }}</div>
+    <div class="meta">{{ source_url }}</div>
+  </div>
+
+  <div class="about">
+    <div class="lab">on who we are</div>
+    <h2>About</h2>
+    <p>{{ about }}</p>
+  </div>
+
+  <div class="grid">
+    <div class="col">
+      <div class="lab">our work</div>
+      <h3>What we do</h3>
+      <ul class="petal">{% for item in what_we_do %}<li>{{ item }}</li>{% endfor %}</ul>
+    </div>
+    <div class="col">
+      <div class="lab">our edge</div>
+      <h3>Why us</h3>
+      <ul class="petal">{% for item in why_us %}<li>{{ item }}</li>{% endfor %}</ul>
+    </div>
+  </div>
+
+  <div class="pair">
+    <div class="card">
+      <div class="lab">on culture</div>
+      <h4>How we work</h4>
+      <p>{{ culture }}</p>
+    </div>
+    <div class="card">
+      <div class="lab">on careers</div>
+      <h4>Come grow with us</h4>
+      <p>{{ careers }}</p>
+    </div>
+  </div>
+
+  <div class="cta">
+    <span class="leaf"></span>
+    <span class="txt">{{ call_to_action }}</span>
+    <span class="go">Begin →</span>
+  </div>
+</div>
+
+</body></html>
