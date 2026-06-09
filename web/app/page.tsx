@@ -627,6 +627,31 @@ function Editor({
     }
   }
 
+  /**
+   * Download the PDF. The signed Supabase URL is cross-origin, and browsers
+   * IGNORE the `download` attribute on cross-origin links — they open in a new
+   * tab instead. We fetch the bytes, wrap them in a blob URL (same-origin),
+   * then trigger a real download via a synthetic anchor click.
+   */
+  async function downloadPdf() {
+    try {
+      const res = await fetch(pdfFull);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${brochure.company_name || "brochure"}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      // Fallback: open in new tab so the user can manually save it
+      window.open(pdfFull, "_blank", "noopener,noreferrer");
+    }
+  }
+
   return (
     <div className="flex-1 flex flex-col min-h-0">
       <div className="sticky top-0 z-10 backdrop-blur bg-black/60 border-b border-white/10 px-5 py-3 flex items-center justify-between gap-3">
@@ -642,13 +667,12 @@ function Editor({
           >
             {rerendering ? "Re-rendering…" : "Apply changes"}
           </button>
-          <a
-            href={pdfFull}
-            download={`${brochure.company_name || "brochure"}.pdf`}
+          <button
+            onClick={downloadPdf}
             className="px-4 py-2 border border-white/20 rounded-lg font-semibold text-sm hover:bg-white/10 transition"
           >
             Download PDF
-          </a>
+          </button>
         </div>
       </div>
 

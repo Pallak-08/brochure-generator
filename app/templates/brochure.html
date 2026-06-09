@@ -55,36 +55,45 @@
     position: absolute;
     pointer-events: none;
   }
-  /* Default: subtle */
+  /* Shapes — smaller and pushed further off-canvas so they decorate
+     without ever overlapping the title or body text. */
   .cover .shape-a {
-    top: -120pt; right: -120pt; width: 320pt; height: 320pt;
+    top: -200pt; right: -200pt; width: 380pt; height: 380pt;
     border-radius: 50%; background: var(--accent);
+    z-index: 0;
   }
   .cover .shape-b {
-    bottom: -100pt; left: -100pt; width: 260pt; height: 260pt;
+    bottom: -160pt; left: -160pt; width: 280pt; height: 280pt;
     border-radius: 50%; border: 8pt solid var(--bg); opacity: 0.18;
+    z-index: 0;
   }
   .cover .shape-c { display: none; }
 
+  /* Position relative + explicit z-index so text always paints
+     ABOVE the absolutely-positioned decorative shapes. */
   .cover-eyebrow {
     font-size: 8.5pt; letter-spacing: 3pt; text-transform: uppercase;
-    font-weight: 600; z-index: 3; display: inline-block;
+    font-weight: 600; position: relative; z-index: 3; display: inline-block;
     border: 1.2pt solid currentColor; padding: 5pt 10pt;
     align-self: flex-start; opacity: 0.95;
   }
   .cover-title {
-    margin: auto 0 0; font-size: 64pt; line-height: 1;
-    font-weight: 700; letter-spacing: -1.5pt; z-index: 3;
-    max-width: 380pt;
+    margin: auto 0 0; font-size: 60pt; line-height: 1;
+    font-weight: 700; letter-spacing: -1.5pt;
+    position: relative; z-index: 3;
+    max-width: 420pt;
+    word-break: break-word;
   }
   .cover-tag {
     margin: 22pt 0 0; font-size: 15pt; line-height: 1.45;
-    font-weight: 300; max-width: 420pt; z-index: 3; opacity: 0.94;
+    font-weight: 300; max-width: 420pt;
+    position: relative; z-index: 3; opacity: 0.94;
   }
   .cover-foot {
     margin-top: 28pt; display: flex; justify-content: space-between;
     align-items: flex-end; font-size: 8.5pt; letter-spacing: 2pt;
-    text-transform: uppercase; z-index: 3; font-weight: 500; opacity: 0.85;
+    text-transform: uppercase;
+    position: relative; z-index: 3; font-weight: 500; opacity: 0.85;
   }
   .cover-foot .badge {
     background: var(--bg); color: var(--primary);

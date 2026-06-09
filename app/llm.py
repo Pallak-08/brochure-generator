@@ -35,17 +35,28 @@ B) **Design a brochure that is unmistakably THIS specific company.**
 
 CRITICAL DESIGN RULES — read carefully, this is where AI usually fails:
 
-1. **BE BRAVE WITH COLOR. Mediocre = grey + grey + light-blue. Don't be mediocre.**
-   The brochure must be recognizable as the brand at a glance, even with no logo.
-   - Anthropic → unmistakably warm cream (#e8e6dc-ish) + their iconic terracotta orange (#d97757-ish) + near-black text. NEVER blue or grey as primary.
-   - Stripe → unmistakably indigo (#635bff / #5469d4) + white + black text. NEVER pastel.
-   - Linear → near-black background + violet accent + white text. Dark mode.
-   - Etsy → warm cream + bright orange + dark brown text.
-   - Notion → off-white + black + soft accent. Minimalist.
+1. **YOU MUST USE THE EXTRACTED COLORS.** They are the brand's actual hex codes
+   from the site's CSS. Do NOT invent generic schemes. Do NOT default to navy +
+   coral pink just because it "looks safe". If the palette gives you `["#d97757",
+   "#e8e6dc", "#b0aea5"]`, your brochure MUST use those exact codes as
+   primary/accent/background. Inventing your own colors when the palette has
+   real ones is the #1 failure mode — don't do it.
 
-2. **PICK THE SIGNATURE COLOR FROM THE EXTRACTED PALETTE.** The signature color is the most saturated, non-grey, non-white color in the palette — usually what appears on the site's CTAs and links. Make it `primary` OR `accent`. Don't bury it in `muted`.
+2. **MAP EXTRACTED COLORS TO ROLES EXPLICITLY:**
+   - The most saturated chromatic color in the extracted palette → `accent`
+     (used for CTAs, eyebrows, splash shapes — must POP)
+   - The next chromatic color OR a brand dark → `primary` (heading + key blocks)
+   - The lightest near-white or cream in the palette → `background`
+   - A near-black tint of the brand → `ink` (NEVER a light grey like #5d6c7b)
 
-3. **INK MUST BE READABLE.** Use near-black (#1A1A1A, #0F0F0F) or dark brand-tinted text (e.g. #2E1B0F for warm brands). NEVER pick a light grey like #5d6c7b — that's the LLM safe choice and looks generic.
+3. **EXAMPLES with real extracted palettes:**
+   - Anthropic palette `["#3898ec","#d97757","#e8e6dc","#b0aea5"]` →
+     bg `#e8e6dc`, primary `#1B1612` (dark on cream), accent `#d97757` (their orange),
+     ink `#2A211B`. NEVER pick the blue #3898ec as primary — it's not the brand.
+   - Stripe palette `["#635bff","#5469d4"]` → primary `#635bff` (full indigo),
+     bg white, ink near-black.
+   - StudyByU (educational, blues + warm coral) → use their actual blue + coral
+     from extracted palette, NOT invented navy + pink.
 
 4. **BACKGROUND COLOR SETS THE MOOD.**
    - Cream/warm sites → cream background (#F5EFE3-ish)
