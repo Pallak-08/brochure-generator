@@ -33,52 +33,19 @@ export default async function OG() {
           width: "100%",
           height: "100%",
           display: "flex",
+          // The same three-gradient aurora as the live hero section.
+          // Each radial fades to transparent at 55% of its radius, which
+          // is what makes the falloff smooth (no banding, no hard edges).
           backgroundColor: "#0B0B0F",
+          backgroundImage: [
+            "radial-gradient(circle at 15% 25%, rgba(124, 58, 237, 0.55) 0%, rgba(124, 58, 237, 0) 55%)",
+            "radial-gradient(circle at 85% 30%, rgba(6, 182, 212, 0.45) 0%, rgba(6, 182, 212, 0) 55%)",
+            "radial-gradient(circle at 50% 95%, rgba(236, 72, 153, 0.42) 0%, rgba(236, 72, 153, 0) 55%)",
+          ].join(", "),
           color: "#F5F5F5",
-          position: "relative",
           padding: "70px",
         }}
       >
-        {/* Decorative color blobs — solid filled circles with soft alpha,
-            laid out off-canvas for the soft-glow effect. Satori doesn't
-            support filter:blur, so we use big transparent gradient circles. */}
-        <div
-          style={{
-            position: "absolute",
-            top: -120,
-            left: -120,
-            width: 460,
-            height: 460,
-            borderRadius: 9999,
-            background: "rgba(124, 58, 237, 0.55)",
-            display: "flex",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            top: 120,
-            right: -100,
-            width: 380,
-            height: 380,
-            borderRadius: 9999,
-            background: "rgba(6, 182, 212, 0.40)",
-            display: "flex",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            bottom: -160,
-            right: 200,
-            width: 380,
-            height: 380,
-            borderRadius: 9999,
-            background: "rgba(236, 72, 153, 0.35)",
-            display: "flex",
-          }}
-        />
-
         {/* Content */}
         <div
           style={{
