@@ -8,7 +8,15 @@ from google import genai
 from app.scraper import Website
 from app.design import extract_palette
 
-MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-flash-latest"]
+# Order matters: try the most capable first, fall back to lighter models
+# that get hit less and almost never 503 under normal load.
+MODELS = [
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
+    "gemini-flash-latest",
+    "gemini-2.0-flash-001",
+    "gemini-2.0-flash-lite-001",
+]
 
 LINK_FILTER_PROMPT = """You are given a list of links found on a company website.
 Decide which links are most relevant for building a marketing brochure about the company.
@@ -107,10 +115,16 @@ def _client():
 
 
 def llm_json(prompt_parts: list) -> dict:
-    """Call Gemini with JSON mode. Falls back through MODELS and retries on 503."""
+    """Call Gemini with JSON mode. Falls back through MODELS and retries on 503.
+
+    Strategy: 2 attempts per model with 3s, 6s backoff, then move to next model
+    in MODELS. Worst case across 5 models = ~45s before giving up. The lighter
+    models near the end of the list almost never 503 under peak load so we
+    usually succeed within a few seconds.
+    """
     last_err = None
     for model in MODELS:
-        for attempt in range(3):
+        for attempt in range(2):
             try:
                 r = _client().models.generate_content(
                     model=model,
@@ -120,10 +134,11 @@ def llm_json(prompt_parts: list) -> dict:
                 return json.loads(r.text)
             except Exception as e:
                 last_err = e
-                if "503" in str(e) or "UNAVAILABLE" in str(e):
-                    time.sleep(2 + attempt * 2)
+                msg = str(e)
+                if "503" in msg or "UNAVAILABLE" in msg or "overloaded" in msg.lower():
+                    time.sleep(3 * (attempt + 1))  # 3s, 6s
                     continue
-                break  # non-retryable: try next model
+                break  # non-retryable error — skip to next model
     raise last_err
 
 
