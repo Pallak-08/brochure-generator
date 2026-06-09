@@ -10,10 +10,28 @@ const instrumentSerif = Instrument_Serif({
   weight: "400",
 });
 
+const SITE_URL = "https://brochure-generator-silk.vercel.app";
+const TITLE = "Brochure Generator — Paste a URL, get a branded brochure";
+const DESC =
+  "AI-generated PDF brochures in the company's real colors and voice. Scrapes the site's CSS palette, picks a design vibe, renders a custom PDF. Free, ~15 seconds, no signup.";
+
 export const metadata: Metadata = {
-  title: "Brochure Generator — Paste a URL, get a branded brochure",
-  description:
-    "Turn any company website into a branded PDF brochure in seconds. Color palette and design vibe are extracted from the actual site.",
+  metadataBase: new URL(SITE_URL),
+  title: TITLE,
+  description: DESC,
+  openGraph: {
+    title: TITLE,
+    description: DESC,
+    url: SITE_URL,
+    siteName: "Brochure Generator",
+    type: "website",
+    // The auto-generated image from opengraph-image.tsx is added by Next.js
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESC,
+  },
 };
 
 export default function RootLayout({
